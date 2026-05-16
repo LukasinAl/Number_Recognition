@@ -16,6 +16,7 @@ class Matrix {
   Matrix& operator*=(const Matrix& other);
   Matrix& operator+=(const Matrix& other);
   Matrix operator*(double other) const;
+  Matrix& operator*=(double other);
   static Matrix identity(size_t size);
   static Matrix zero(size_t height, size_t width);
   static Matrix one(size_t height, size_t width);
