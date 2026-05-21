@@ -1,7 +1,11 @@
 #include "Matrix.h"
 #include <algorithm>
+#include <cmath>
 #include <exception>
+#include <fstream>
+#include <initializer_list>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 Matrix::Matrix(size_t height, size_t width, double default_values)
@@ -19,12 +23,37 @@ Matrix::Matrix(const std::vector<std::vector<double>>& values) {
   }
   n_ = values.size();
   m_ = values[0].size();
-  for (const std::vector<double> row : values) {
+  for (const std::vector<double>& row : values) {
     if (row.size() != m_) {
       throw std::runtime_error("Inconsistent lenght");
     }
   }
   matrix_values_ = values;
+}
+
+Matrix::Matrix() {
+  n_ = 0;
+  m_ = 0;
+}
+
+Matrix::Matrix(std::initializer_list<std::initializer_list<double>> list) {
+  n_ = list.size();
+  if (n_ == 0) {
+    throw std::runtime_error("Zero length");
+  }
+  m_ = list.begin()->size();
+  if (m_ == 0) {
+    throw std::runtime_error("Zero length");
+  }
+  for (std::initializer_list<double> row : list) {
+    if (row.size() != m_) {
+      throw std::runtime_error("Inconsistent lenght");
+    }
+  }
+  matrix_values_.reserve(n_);
+  for (auto& row : list) {
+    matrix_values_.emplace_back(row.begin(), row.end());
+  }
 }
 
 void Matrix::Transpose() {
@@ -46,7 +75,7 @@ Matrix Matrix::operator*(const Matrix& other) const {
   for (const std::vector<double>& row : matrix_values_) {
     for (size_t i = 0; i < other.m_; ++i) {
       for (size_t j = 0; j < other.n_; ++j) {
-        temp[c][i] += row[j] * other.matrix_values_[i][j];
+        temp[c][i] += row[j] * other.matrix_values_[j][i];
       }
     }
     c++;
@@ -84,6 +113,7 @@ Matrix Matrix::operator*(double other) const {
       temp[i][j] = matrix_values_[i][j] * other;
     }
   }
+  return Matrix(temp);
 }
 
 Matrix& Matrix::operator*=(double other) {
@@ -92,8 +122,66 @@ Matrix& Matrix::operator*=(double other) {
       item *= other;
     }
   }
+  return *this;
 }
 
 Matrix operator*(double first, const Matrix& other) {
   return other * first;
+}
+
+bool Matrix::operator==(const Matrix& other) const {
+  if (n_ != other.n_ || m_ != other.m_) {
+    return false;
+  }
+  for (size_t i = 0; i < n_; ++i) {
+    for (size_t j = 0; j < m_; ++j) {
+      if (matrix_values_[i][j] != other.matrix_values_[i][j]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+Matrix Matrix::zero(size_t height, size_t weight) {
+  return Matrix(
+      std::vector<std::vector<double>>(height, std::vector<double>(weight, 0)));
+}
+
+Matrix Matrix::one(size_t height, size_t weight) {
+  return Matrix(
+      std::vector<std::vector<double>>(height, std::vector<double>(weight, 1)));
+}
+
+Matrix Matrix::identity(size_t size) {
+  std::vector<std::vector<double>> temp(size, std::vector<double>(size, 0));
+  for (size_t i = 0; i < size; ++i) {
+    temp[i][i] = 1;
+  }
+  return Matrix(temp);
+}
+
+void Matrix::load_from_txt(std::string file_name) {
+  std::ifstream file(file_name);
+  std::vector<double> values;
+  double val;
+  while (file >> val) {
+    values.push_back(val);
+  }
+  if (values.size() < 2) {
+    throw std::runtime_error("Invalid format");
+  }
+  n_ = static_cast<size_t>(values[0]);
+  m_ = static_cast<size_t>(values[1]);
+  if (values.size() != 2 + n_ * m_) {
+    throw std::runtime_error("Too short input");
+  }
+  matrix_values_.resize(n_);
+  int cnt = 2;
+  for (size_t i = 0; i < n_; ++i) {
+    for (size_t j = 0; j < m_; ++j) {
+      matrix_values_[i].push_back(values[cnt]);
+      cnt++;
+    }
+  }
 }
