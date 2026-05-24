@@ -12,8 +12,9 @@ class Net {
   std::vector<Matrix> biases_;
 
  public:
-  Net(size_t lay, std::vector<int>& sizes);
-  Net(int lay, std::initializer_list<int> sizes);
+  Net(size_t lay, const std::vector<int>& sizes);
+  Net(size_t lay, std::initializer_list<int> sizes);
   void fill_by_zeros();
-  std::vector<double> forward_pass(std::vector<double>& input);
+  std::vector<double> forward_pass(const std::vector<double>& input) const;
+  std::vector<double> forward_pass(std::initializer_list<double> input) const;
 };

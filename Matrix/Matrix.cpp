@@ -56,12 +56,10 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<double>> list) {
   }
 }
 
-Matrix::Matrix(std::vector<double>& input) {
-  std::vector<std::vector<double>> temp(input.size(), std::vector<double>(1));
+Matrix::Matrix(const std::vector<double>& input) : Matrix(input.size(), 1, 0) {
   for (size_t i = 0; i < input.size(); ++i) {
-    temp[i][0] = input[i];
+    matrix_values_[i][0] = input[i];
   }
-  Matrix(temp);
 }
 
 Matrix& Matrix::Transpose() {
@@ -170,7 +168,7 @@ Matrix Matrix::identity(size_t size) {
   return Matrix(temp);
 }
 
-void Matrix::Load_from_txt(std::string file_name) {
+void Matrix::Load_from_txt(const std::string& file_name) {
   std::ifstream file(file_name);
   std::vector<double> values;
   double val;
@@ -193,4 +191,8 @@ void Matrix::Load_from_txt(std::string file_name) {
       cnt++;
     }
   }
+}
+
+std::vector<std::vector<double>> Matrix::Get_values() const {
+  return matrix_values_;
 }
