@@ -13,9 +13,10 @@ class Matrix {
   Matrix(size_t height, size_t width, double default_values);
   Matrix(const std::vector<std::vector<double>>& values);
   Matrix(std::initializer_list<std::initializer_list<double>> list);
+  Matrix(std::vector<double>& input);
   Matrix();
-  void load_from_txt(std::string file_name);
-  void Transpose();
+  void Load_from_txt(std::string file_name);
+  Matrix& Transpose();
   Matrix operator*(const Matrix& other) const;
   Matrix operator+(const Matrix& other) const;
   Matrix& operator*=(const Matrix& other);

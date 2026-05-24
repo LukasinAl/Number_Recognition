@@ -56,7 +56,15 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<double>> list) {
   }
 }
 
-void Matrix::Transpose() {
+Matrix::Matrix(std::vector<double>& input) {
+  std::vector<std::vector<double>> temp(input.size(), std::vector<double>(1));
+  for (size_t i = 0; i < input.size(); ++i) {
+    temp[i][0] = input[i];
+  }
+  Matrix(temp);
+}
+
+Matrix& Matrix::Transpose() {
   std::vector<std::vector<double>> temp(m_, std::vector<double>(n_));
   for (size_t i = 0; i < n_; ++i) {
     for (size_t j = 0; j < m_; ++j) {
@@ -64,6 +72,7 @@ void Matrix::Transpose() {
     }
   }
   matrix_values_ = std::move(temp);
+  return *this;
 }
 
 Matrix Matrix::operator*(const Matrix& other) const {
@@ -161,7 +170,7 @@ Matrix Matrix::identity(size_t size) {
   return Matrix(temp);
 }
 
-void Matrix::load_from_txt(std::string file_name) {
+void Matrix::Load_from_txt(std::string file_name) {
   std::ifstream file(file_name);
   std::vector<double> values;
   double val;
