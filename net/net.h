@@ -8,6 +8,7 @@
 class Net {
  private:
   bool activateOutput;
+  double learning_step;
   size_t layers_;
   std::vector<int> layer_sizes_;
   std::vector<Matrix> weights_;
@@ -37,4 +38,7 @@ class Net {
   std::pair<std::vector<Matrix>, std::vector<Matrix>> CalculateGradients(
       const std::vector<double>& result,
       const std::vector<double>& expected) const;
+  void Step(std::pair<std::vector<Matrix>, std::vector<Matrix>> gradients,
+            const std::vector<double>& result,
+            const std::vector<double>& expected);
 };

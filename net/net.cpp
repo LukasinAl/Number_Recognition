@@ -16,6 +16,7 @@ Net::Net(size_t lay, const std::vector<int>& sizes)
     throw std::runtime_error("Too little layer sizes");
   }
   activateOutput = false;
+  learning_step = 0.01;
   fill_by_zeros();
   SetActivationRelU();
 }
@@ -168,4 +169,21 @@ std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
         biases_gradients[i] * last_pass_activation[i].Transpose();
   }
   return {weights_gradients, biases_gradients};
+}
+
+void Net::Step(std::pair<std::vector<Matrix>, std::vector<Matrix>> gradients,
+               const std::vector<double>& result,
+               const std::vector<double>& expected) {
+  for (size_t layer = 0; layer < layers_ - 1; ++layer) {
+    size_t input = layer_sizes_[layer];
+    size_t output = layer_sizes_[layer + 1];
+    for (size_t row = 0; row < output; ++row) {
+      for (size_t column = 0; column < input; ++column) {
+        weights_[layer].matrix_values[row][column] +=
+            gradients.first[layer].matrix_values[row][column] * learning_step;
+      }
+      biases_[layer].matrix_values[row][0] +=
+          gradients.second[layer].matrix_values[row][0] * learning_step;
+    }
+  }
 }
