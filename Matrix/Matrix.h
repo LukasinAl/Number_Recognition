@@ -21,7 +21,6 @@ class Matrix {
   Matrix& operator+=(const Matrix& other);
   Matrix operator*(double other) const;
   Matrix& operator*=(double other);
-  std::vector<std::vector<double>> Get_values() const;
   bool operator==(const Matrix& other) const;
   static Matrix identity(size_t size);
   static Matrix zero(size_t height, size_t width);

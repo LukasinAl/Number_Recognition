@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include <initializer_list>
+#include <random>
 #include <stdexcept>
 #include <vector>
 #include "../Matrix/Matrix.h"
@@ -30,13 +31,13 @@ std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
     temp = weights_[i] * temp + biases_[i];
     ApplyActivation(temp);
   }
-  temp.Transpose();
-  return temp.Get_values()[0];
+  return temp.Transpose().matrix_values[0];
 }
 
 void Net::ApplyActivation(Matrix& vector) const {
   for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-    vector.matrix_values[i][0] = activation_function_(vector.matrix_values[i][0]);
+    vector.matrix_values[i][0] =
+        activation_function_(vector.matrix_values[i][0]);
   }
 }
 
@@ -56,6 +57,28 @@ void Net::fill_by_zeros() {
   }
 }
 
+void Net::FillBySmallRandomValues() {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<double> dist(-0.1, 0.1);
+  weights_.resize(layers_ - 1);
+  biases_.resize(layers_ - 1);
+  for (size_t i = 0; i < layers_ - 1; ++i) {
+    size_t input = layer_sizes_[i];
+    size_t output = layer_sizes_[i + 1];
+    std::vector<std::vector<double>> temp_w(output, std::vector<double>(input));
+    std::vector<double> temp_b(output);
+    for (size_t row = 0; row < output; ++row) {
+      for (size_t column = 0; column < input; ++column) {
+        temp_w[row][column] = dist(gen);
+      }
+      temp_b[row] = dist(gen);
+    }
+    weights_[i] = Matrix(temp_w);
+    biases_[i] = Matrix(temp_b);
+  }
+}
+
 void Net::SetActivationRelU() {
   activation_function_ = [](double x) {
     if (x > 0) {
@@ -72,6 +95,19 @@ void Net::SetActivationSigmoid() {
 }
 
 double Net::CalculateLoss(std::vector<double>& result,
-                           std::vector<double>& expected) const {
+                          std::vector<double>& expected) const {
+  if (result.size() != expected.size()) {
+    throw std::runtime_error("Wrong dimentions");
+  }
   return loss_function_(result, expected);
+}
+
+void Net::SetLossMSE() {
+  loss_function_ = [](std::vector<double>& first, std::vector<double>& second) {
+    double result = 0.0;
+    for (size_t i = 0; i < first.size(); ++i) {
+      result += std::pow(first[i] - second[i], 2);
+    }
+    return result;
+  };
 }

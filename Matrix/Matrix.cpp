@@ -192,7 +192,3 @@ void Matrix::LoadFromTxt(const std::string& file_name) {
     }
   }
 }
-
-std::vector<std::vector<double>> Matrix::Get_values() const {
-  return matrix_values;
-}
