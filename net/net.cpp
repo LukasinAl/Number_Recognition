@@ -15,6 +15,7 @@ Net::Net(size_t lay, const std::vector<int>& sizes)
   if (layers_ != layer_sizes_.size()) {
     throw std::runtime_error("Too little layer sizes");
   }
+  activateOutput = false;
   fill_by_zeros();
   SetActivationRelU();
 }
@@ -29,7 +30,9 @@ std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
   }
   for (size_t i = 0; i < layers_ - 1; ++i) {
     temp = weights_[i] * temp + biases_[i];
-    ApplyActivation(temp);
+    if (i < layers_ - 2 || activateOutput) {
+      ApplyActivation(temp);
+    }
   }
   return temp.Transpose().matrix_values[0];
 }
@@ -108,6 +111,22 @@ void Net::SetLossMSE() {
     for (size_t i = 0; i < first.size(); ++i) {
       result += std::pow(first[i] - second[i], 2);
     }
+    result /= first.size();
     return result;
   };
+}
+
+void Net::SetActivateOutput(bool value) {
+  activateOutput = value;
+}
+
+std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
+    std::vector<double>& result, std::vector<double>& expected) const {
+  //Loss function MSE support for now
+  std::vector<Matrix> weights_gradients(layers_ - 1);
+  std::vector<Matrix> biases_gradients(layers_ - 1);
+  biases_gradients[layers_ - 2] = 2 * (Matrix(result) - Matrix(expected));
+  for (size_t i = layers_ - 1; i > 0; --i) {
+    
+  }
 }

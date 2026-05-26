@@ -150,6 +150,18 @@ bool Matrix::operator==(const Matrix& other) const {
   return true;
 }
 
+Matrix Matrix::operator-() const {
+  return (*this) * -1;
+}
+
+Matrix Matrix::operator-(const Matrix& other) const {
+  return (*this) + (other * -1);
+}
+
+Matrix& Matrix::operator-=(const Matrix& other) {
+  return ((*this) += (other * -1));
+}
+
 Matrix Matrix::zero(size_t height, size_t weight) {
   return Matrix(
       std::vector<std::vector<double>>(height, std::vector<double>(weight, 0)));

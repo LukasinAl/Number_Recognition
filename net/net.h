@@ -7,6 +7,7 @@
 
 class Net {
  private:
+  bool activateOutput;
   size_t layers_;
   std::vector<int> layer_sizes_;
   std::vector<Matrix> weights_;
@@ -25,7 +26,10 @@ class Net {
   void ApplyActivation(Matrix& vector) const;
   void SetActivationRelU();
   void SetActivationSigmoid();
+  void SetActivateOutput(bool value);
   double CalculateLoss(std::vector<double>& result,
-                        std::vector<double>& expected) const;
+                       std::vector<double>& expected) const;
   void SetLossMSE();
+  std::pair<std::vector<Matrix>, std::vector<Matrix>> CalculateGradients(
+      std::vector<double>& result, std::vector<double>& expected) const;
 };
