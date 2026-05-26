@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
@@ -10,11 +11,19 @@ class Net {
   std::vector<int> layer_sizes_;
   std::vector<Matrix> weights_;
   std::vector<Matrix> biases_;
+  std::function<double(double)> activation_function_;
+  std::function<double(std::vector<double>, std::vector<double>)>
+      loss_function_;
 
  public:
   Net(size_t lay, const std::vector<int>& sizes);
   Net(size_t lay, std::initializer_list<int> sizes);
   void fill_by_zeros();
-  std::vector<double> forward_pass(const std::vector<double>& input) const;
-  std::vector<double> forward_pass(std::initializer_list<double> input) const;
+  std::vector<double> ForwardPass(const std::vector<double>& input) const;
+  std::vector<double> ForwardPass(std::initializer_list<double> input) const;
+  void ApplyActivation(Matrix& vector) const;
+  void SetActivationRelU();
+  void SetActivationSigmoid();
+  double CalculateLoss(std::vector<double>& result,
+                        std::vector<double>& expected) const;
 };

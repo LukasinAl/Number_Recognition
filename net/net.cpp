@@ -1,4 +1,6 @@
 #include "net.h"
+#include <cmath>
+#include <functional>
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
@@ -13,26 +15,34 @@ Net::Net(size_t lay, const std::vector<int>& sizes)
     throw std::runtime_error("Too little layer sizes");
   }
   fill_by_zeros();
+  SetActivationRelU();
 }
 
 Net::Net(size_t lay, std::initializer_list<int> sizes)
     : Net(lay, std::vector<int>(sizes)) {}
 
-std::vector<double> Net::forward_pass(const std::vector<double>& input) const {
+std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
   Matrix temp(input);
   if (input.size() != layer_sizes_[0]) {
     throw std::runtime_error("Wrong dimentions");
   }
   for (size_t i = 0; i < layers_ - 1; ++i) {
     temp = weights_[i] * temp + biases_[i];
+    ApplyActivation(temp);
   }
   temp.Transpose();
   return temp.Get_values()[0];
 }
 
-std::vector<double> Net::forward_pass(
+void Net::ApplyActivation(Matrix& vector) const {
+  for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
+    vector.matrix_values[i][0] = activation_function_(vector.matrix_values[i][0]);
+  }
+}
+
+std::vector<double> Net::ForwardPass(
     std::initializer_list<double> input) const {
-  return forward_pass(std::vector<double>(input));
+  return ForwardPass(std::vector<double>(input));
 }
 
 void Net::fill_by_zeros() {
@@ -44,4 +54,24 @@ void Net::fill_by_zeros() {
     biases_[i] = Matrix(std::vector<std::vector<double>>(
         layer_sizes_[i + 1], std::vector<double>(1, 0)));
   }
+}
+
+void Net::SetActivationRelU() {
+  activation_function_ = [](double x) {
+    if (x > 0) {
+      return x;
+    }
+    return 0.0;
+  };
+}
+
+void Net::SetActivationSigmoid() {
+  activation_function_ = [](double x) {
+    return 1.0 / (1.0 + std::exp(-x));
+  };
+}
+
+double Net::CalculateLoss(std::vector<double>& result,
+                           std::vector<double>& expected) const {
+  return loss_function_(result, expected);
 }

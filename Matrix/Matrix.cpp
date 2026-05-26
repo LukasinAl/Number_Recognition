@@ -9,9 +9,9 @@
 #include <vector>
 
 Matrix::Matrix(size_t height, size_t width, double default_values)
-    : n_(height), m_(width) {
-  matrix_values_ = std::vector<std::vector<double>>(
-      n_, std::vector<double>(m_, default_values));
+    : n(height), m(width) {
+  matrix_values = std::vector<std::vector<double>>(
+      n, std::vector<double>(m, default_values));
 }
 
 Matrix::Matrix(const std::vector<std::vector<double>>& values) {
@@ -21,68 +21,68 @@ Matrix::Matrix(const std::vector<std::vector<double>>& values) {
   if (values[0].empty()) {
     throw std::runtime_error("Zero length");
   }
-  n_ = values.size();
-  m_ = values[0].size();
+  n = values.size();
+  m = values[0].size();
   for (const std::vector<double>& row : values) {
-    if (row.size() != m_) {
+    if (row.size() != m) {
       throw std::runtime_error("Inconsistent lenght");
     }
   }
-  matrix_values_ = values;
+  matrix_values = values;
 }
 
 Matrix::Matrix() {
-  n_ = 0;
-  m_ = 0;
+  n = 0;
+  m = 0;
 }
 
 Matrix::Matrix(std::initializer_list<std::initializer_list<double>> list) {
-  n_ = list.size();
-  if (n_ == 0) {
+  n = list.size();
+  if (n == 0) {
     throw std::runtime_error("Zero length");
   }
-  m_ = list.begin()->size();
-  if (m_ == 0) {
+  m = list.begin()->size();
+  if (m == 0) {
     throw std::runtime_error("Zero length");
   }
   for (std::initializer_list<double> row : list) {
-    if (row.size() != m_) {
+    if (row.size() != m) {
       throw std::runtime_error("Inconsistent lenght");
     }
   }
-  matrix_values_.reserve(n_);
+  matrix_values.reserve(n);
   for (auto& row : list) {
-    matrix_values_.emplace_back(row.begin(), row.end());
+    matrix_values.emplace_back(row.begin(), row.end());
   }
 }
 
 Matrix::Matrix(const std::vector<double>& input) : Matrix(input.size(), 1, 0) {
   for (size_t i = 0; i < input.size(); ++i) {
-    matrix_values_[i][0] = input[i];
+    matrix_values[i][0] = input[i];
   }
 }
 
 Matrix& Matrix::Transpose() {
-  std::vector<std::vector<double>> temp(m_, std::vector<double>(n_));
-  for (size_t i = 0; i < n_; ++i) {
-    for (size_t j = 0; j < m_; ++j) {
-      temp[j][i] = matrix_values_[i][j];
+  std::vector<std::vector<double>> temp(m, std::vector<double>(n));
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      temp[j][i] = matrix_values[i][j];
     }
   }
-  matrix_values_ = std::move(temp);
+  matrix_values = std::move(temp);
   return *this;
 }
 
 Matrix Matrix::operator*(const Matrix& other) const {
-  if (m_ != other.n_) {
+  if (m != other.n) {
     throw std::runtime_error("Bad dimentions");
   }
-  std::vector<std::vector<double>> temp(n_, std::vector<double>(other.m_, 0));
+  std::vector<std::vector<double>> temp(n, std::vector<double>(other.m, 0));
   int c = 0;
-  for (const std::vector<double>& row : matrix_values_) {
-    for (size_t i = 0; i < other.m_; ++i) {
-      for (size_t j = 0; j < other.n_; ++j) {
-        temp[c][i] += row[j] * other.matrix_values_[j][i];
+  for (const std::vector<double>& row : matrix_values) {
+    for (size_t i = 0; i < other.m; ++i) {
+      for (size_t j = 0; j < other.n; ++j) {
+        temp[c][i] += row[j] * other.matrix_values[j][i];
       }
     }
     c++;
@@ -96,13 +96,13 @@ Matrix& Matrix::operator*=(const Matrix& other) {
 }
 
 Matrix Matrix::operator+(const Matrix& other) const {
-  if (n_ != other.n_ || m_ != other.m_) {
+  if (n != other.n || m != other.m) {
     throw std::runtime_error("Wrong dimentions");
   }
-  std::vector<std::vector<double>> temp(n_, std::vector<double>(m_, 0));
-  for (size_t i = 0; i < n_; ++i) {
-    for (size_t j = 0; j < m_; ++j) {
-      temp[i][j] = matrix_values_[i][j] + other.matrix_values_[i][j];
+  std::vector<std::vector<double>> temp(n, std::vector<double>(m, 0));
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      temp[i][j] = matrix_values[i][j] + other.matrix_values[i][j];
     }
   }
   return Matrix(temp);
@@ -114,17 +114,17 @@ Matrix& Matrix::operator+=(const Matrix& other) {
 }
 
 Matrix Matrix::operator*(double other) const {
-  std::vector<std::vector<double>> temp(n_, std::vector<double>(m_, 0));
-  for (size_t i = 0; i < n_; ++i) {
-    for (size_t j = 0; j < m_; ++j) {
-      temp[i][j] = matrix_values_[i][j] * other;
+  std::vector<std::vector<double>> temp(n, std::vector<double>(m, 0));
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      temp[i][j] = matrix_values[i][j] * other;
     }
   }
   return Matrix(temp);
 }
 
 Matrix& Matrix::operator*=(double other) {
-  for (std::vector<double>& row : matrix_values_) {
+  for (std::vector<double>& row : matrix_values) {
     for (double& item : row) {
       item *= other;
     }
@@ -137,12 +137,12 @@ Matrix operator*(double first, const Matrix& other) {
 }
 
 bool Matrix::operator==(const Matrix& other) const {
-  if (n_ != other.n_ || m_ != other.m_) {
+  if (n != other.n || m != other.m) {
     return false;
   }
-  for (size_t i = 0; i < n_; ++i) {
-    for (size_t j = 0; j < m_; ++j) {
-      if (matrix_values_[i][j] != other.matrix_values_[i][j]) {
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      if (matrix_values[i][j] != other.matrix_values[i][j]) {
         return false;
       }
     }
@@ -168,7 +168,7 @@ Matrix Matrix::identity(size_t size) {
   return Matrix(temp);
 }
 
-void Matrix::Load_from_txt(const std::string& file_name) {
+void Matrix::LoadFromTxt(const std::string& file_name) {
   std::ifstream file(file_name);
   std::vector<double> values;
   double val;
@@ -178,21 +178,21 @@ void Matrix::Load_from_txt(const std::string& file_name) {
   if (values.size() < 2) {
     throw std::runtime_error("Invalid format");
   }
-  n_ = static_cast<size_t>(values[0]);
-  m_ = static_cast<size_t>(values[1]);
-  if (values.size() != 2 + n_ * m_) {
+  n = static_cast<size_t>(values[0]);
+  m = static_cast<size_t>(values[1]);
+  if (values.size() != 2 + n * m) {
     throw std::runtime_error("Too short input");
   }
-  matrix_values_.resize(n_);
+  matrix_values.resize(n);
   int cnt = 2;
-  for (size_t i = 0; i < n_; ++i) {
-    for (size_t j = 0; j < m_; ++j) {
-      matrix_values_[i].push_back(values[cnt]);
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      matrix_values[i].push_back(values[cnt]);
       cnt++;
     }
   }
 }
 
 std::vector<std::vector<double>> Matrix::Get_values() const {
-  return matrix_values_;
+  return matrix_values;
 }
