@@ -14,7 +14,7 @@ class Matrix {
   Matrix(const std::vector<double>& input);
   Matrix();
   void LoadFromTxt(const std::string& file_name);
-  Matrix& Transpose();
+  Matrix Transpose() const;
   Matrix operator*(const Matrix& other) const;
   Matrix operator+(const Matrix& other) const;
   Matrix& operator*=(const Matrix& other);

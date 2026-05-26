@@ -62,15 +62,14 @@ Matrix::Matrix(const std::vector<double>& input) : Matrix(input.size(), 1, 0) {
   }
 }
 
-Matrix& Matrix::Transpose() {
+Matrix Matrix::Transpose() const {
   std::vector<std::vector<double>> temp(m, std::vector<double>(n));
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = 0; j < m; ++j) {
       temp[j][i] = matrix_values[i][j];
     }
   }
-  matrix_values = std::move(temp);
-  return *this;
+  return Matrix(temp);
 }
 
 Matrix Matrix::operator*(const Matrix& other) const {

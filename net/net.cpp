@@ -37,16 +37,35 @@ std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
   return temp.Transpose().matrix_values[0];
 }
 
+std::vector<double> Net::ForwardPass(
+    std::initializer_list<double> input) const {
+  return ForwardPass(std::vector<double>(input));
+}
+
+std::vector<double> Net::TrainingForwardPass(const std::vector<double>& input) {
+  Matrix temp(input);
+  if (input.size() != layer_sizes_[0]) {
+    throw std::runtime_error("Wrong dimentions");
+  }
+  last_pass_activation.clear();
+  last_pass_pre_acctivation.clear();
+  last_pass_activation.push_back(Matrix(input));
+  for (size_t i = 0; i < layers_ - 1; ++i) {
+    temp = weights_[i] * temp + biases_[i];
+    last_pass_pre_acctivation.push_back(temp);
+    if (i < layers_ - 2 || activateOutput) {
+      ApplyActivation(temp);
+    }
+    last_pass_activation.push_back(temp);
+  }
+  return temp.Transpose().matrix_values[0];
+}
+
 void Net::ApplyActivation(Matrix& vector) const {
   for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
     vector.matrix_values[i][0] =
         activation_function_(vector.matrix_values[i][0]);
   }
-}
-
-std::vector<double> Net::ForwardPass(
-    std::initializer_list<double> input) const {
-  return ForwardPass(std::vector<double>(input));
 }
 
 void Net::fill_by_zeros() {
@@ -89,11 +108,20 @@ void Net::SetActivationRelU() {
     }
     return 0.0;
   };
+  activation_funtion_derivative_ = [](double x) {
+    if (x > 0) {
+      return 1.0;
+    }
+    return 0.0;
+  };
 }
 
 void Net::SetActivationSigmoid() {
   activation_function_ = [](double x) {
     return 1.0 / (1.0 + std::exp(-x));
+  };
+  activation_funtion_derivative_ = [](double x) {
+    return -(std::exp(-x) / std::pow(1 + std::exp(-x), 2));
   };
 }
 
@@ -111,7 +139,6 @@ void Net::SetLossMSE() {
     for (size_t i = 0; i < first.size(); ++i) {
       result += std::pow(first[i] - second[i], 2);
     }
-    result /= first.size();
     return result;
   };
 }
@@ -121,12 +148,24 @@ void Net::SetActivateOutput(bool value) {
 }
 
 std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
-    std::vector<double>& result, std::vector<double>& expected) const {
+    const std::vector<double>& result,
+    const std::vector<double>& expected) const {
   //Loss function MSE support for now
   std::vector<Matrix> weights_gradients(layers_ - 1);
   std::vector<Matrix> biases_gradients(layers_ - 1);
   biases_gradients[layers_ - 2] = 2 * (Matrix(result) - Matrix(expected));
-  for (size_t i = layers_ - 1; i > 0; --i) {
-    
+  for (int i = layers_ - 2; i >= 0; --i) {
+    if (i > 0) {
+      Matrix derivative_pre_activation = last_pass_pre_acctivation[i];
+      for (auto& item : derivative_pre_activation.matrix_values) {
+        item[0] = activation_funtion_derivative_(item[0]);
+      }
+      biases_gradients[i - 1] =
+          (weights_[i].Transpose() * biases_gradients[i]) *
+          derivative_pre_activation;
+    }
+    weights_gradients[i] =
+        biases_gradients[i] * last_pass_activation[i].Transpose();
   }
+  return {weights_gradients, biases_gradients};
 }

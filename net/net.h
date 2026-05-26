@@ -12,7 +12,10 @@ class Net {
   std::vector<int> layer_sizes_;
   std::vector<Matrix> weights_;
   std::vector<Matrix> biases_;
+  std::vector<Matrix> last_pass_activation;
+  std::vector<Matrix> last_pass_pre_acctivation;
   std::function<double(double)> activation_function_;
+  std::function<double(double)> activation_funtion_derivative_;
   std::function<double(std::vector<double>&, std::vector<double>&)>
       loss_function_;
 
@@ -22,7 +25,8 @@ class Net {
   void fill_by_zeros();
   void FillBySmallRandomValues();
   std::vector<double> ForwardPass(const std::vector<double>& input) const;
-  std::vector<double> ForwardPass(std::initializer_list<double> input) const;
+  std::vector<double> ForwardPass(std::initializer_list<double> inputT) const;
+  std::vector<double> TrainingForwardPass(const std::vector<double>& input);
   void ApplyActivation(Matrix& vector) const;
   void SetActivationRelU();
   void SetActivationSigmoid();
@@ -31,5 +35,6 @@ class Net {
                        std::vector<double>& expected) const;
   void SetLossMSE();
   std::pair<std::vector<Matrix>, std::vector<Matrix>> CalculateGradients(
-      std::vector<double>& result, std::vector<double>& expected) const;
+      const std::vector<double>& result,
+      const std::vector<double>& expected) const;
 };
