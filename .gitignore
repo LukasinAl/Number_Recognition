@@ -4,3 +4,4 @@
 build
 read.cpp
 test.cpp
+*.csv
