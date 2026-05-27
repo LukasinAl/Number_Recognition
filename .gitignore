@@ -2,3 +2,5 @@
 *.out
 *.gch
 build
+read.cpp
+test.cpp

@@ -1,0 +1,14 @@
+FROM alpine:latest as compile
+RUN apk add --no-cache make cmake gcc bash
+WORKDIR /build
+COPY src src
+COPY build.sh build.sh
+COPY CMakeLists.txt CMakeLists.txt
+RUN ./build.sh
+
+
+FROM ubuntu:latest
+WORKDIR training
+COPY data/ data/
+COPY --from compile /build/train train
+ENTRYPOINT ["./train"]
