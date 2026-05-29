@@ -37,6 +37,9 @@ class Net {
   std::pair<std::vector<Matrix>, std::vector<Matrix>> CalculateGradients(
       const std::vector<double>& result,
       const std::vector<double>& expected) const;
+  void Train(const std::vector<std::vector<double>>& inputs,
+             const std::vector<std::vector<double>>& targets, int epochs,
+             int batch_size);
   void Step(std::pair<std::vector<Matrix>, std::vector<Matrix>> gradients);
   void DumpToBinary(const std::string& filename) const;
   void ReadFromBinary(const std::string& filename);

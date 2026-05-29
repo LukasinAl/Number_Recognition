@@ -231,3 +231,49 @@ void Net::ReadFromBinary(const std::string& file_name) {
     }
   }
 }
+
+void Net::Train(const std::vector<std::vector<double>>& inputs,
+                const std::vector<std::vector<double>>& targets, int epochs,
+                int batch_size) {
+  if (inputs.size() != targets.size()) {
+    throw std::runtime_error("Number of inputs and targets is different");
+  }
+  for (int i = 0; i < epochs; ++i) {
+    int total_count = 0;
+    while (total_count < inputs.size()) {
+      std::vector<double> result;
+      std::vector<Matrix> weight_grad;
+      std::vector<Matrix> biases_grad;
+      weight_grad.resize(layers_ - 1);
+      biases_grad.resize(layers_ - 1);
+      for (size_t item = 0; item < batch_size; ++item) {
+        if (total_count == inputs.size()) {
+          break;
+        }
+        result = TrainingForwardPass(inputs[total_count]);
+        auto grads = CalculateGradients(result, targets[total_count]);
+        for (size_t lay = 0; lay < layers_ - 1; ++lay) {
+          if (weight_grad[lay].m == 0) {
+            weight_grad[lay] = grads.first[lay];
+            biases_grad[lay] = grads.second[lay];
+          } else {
+            weight_grad[lay] += grads.first[lay];
+            biases_grad[lay] += grads.second[lay];
+          }
+        }
+        total_count++;
+      }
+      for (size_t lay = 0; lay < layers_ - 1; ++lay) {
+        int size;
+        if (total_count != inputs.size() || total_count % batch_size == 0) {
+          size = batch_size;
+        } else {
+          size = total_count % batch_size;
+        }
+        weight_grad[lay] *= (1.0 / size);
+        biases_grad[lay] *= (1.0 / size);
+      }
+      Step({weight_grad, biases_grad});
+    }
+  }
+}

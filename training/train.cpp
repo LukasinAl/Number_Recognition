@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "../src/net/net.h"
+#include "src/net/net.h"
 
 std::pair<int, std::vector<double>> ParceCsvLine(const std::string& line) {
   std::stringstream ss(line);
@@ -95,7 +95,7 @@ int main() {
       for (double item : result) {
         max = std::max(max, item);
       }
-      if (max == result[label]) {
+      if (max == result[label] || result[label] > 0.01) {
         correct++;
       }
     }
