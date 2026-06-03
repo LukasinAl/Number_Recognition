@@ -11,5 +11,5 @@ FROM ubuntu:latest
 WORKDIR training
 RUN mkdir weights
 COPY data/ data/
-COPY --from compile /build/train train
-ENTRYPOINT ["./train"]
+COPY --from compile /build/train_net train_net
+ENTRYPOINT ["./train_net"]

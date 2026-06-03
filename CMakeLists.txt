@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(NeuralNetwork VERSION 2.0.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_CXX_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS "-O3")
 add_subdirectory(extern/pybind11)
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
