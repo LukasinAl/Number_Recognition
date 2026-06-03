@@ -4,7 +4,47 @@ Neural network core
 from __future__ import annotations
 import collections.abc
 import typing
-__all__: list[str] = ['Net']
+__all__: list[str] = ['ActivationFunction', 'Net']
+class ActivationFunction:
+    """
+    Members:
+    
+      NO
+    
+      RELU
+    
+      SIGMOID
+    """
+    NO: typing.ClassVar[ActivationFunction]  # value = <ActivationFunction.NO: 2>
+    RELU: typing.ClassVar[ActivationFunction]  # value = <ActivationFunction.RELU: 0>
+    SIGMOID: typing.ClassVar[ActivationFunction]  # value = <ActivationFunction.SIGMOID: 1>
+    __members__: typing.ClassVar[dict[str, ActivationFunction]]  # value = {'NO': <ActivationFunction.NO: 2>, 'RELU': <ActivationFunction.RELU: 0>, 'SIGMOID': <ActivationFunction.SIGMOID: 1>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
 class Net:
     def CalculateLoss(self, arg0: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], arg1: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> float:
         ...
@@ -18,9 +58,7 @@ class Net:
         ...
     def ReadFromBinary(self, arg0: str) -> None:
         ...
-    def SetActivationRelu(self) -> None:
-        ...
-    def SetActivationSigmoid(self) -> None:
+    def SetLayersAcivation(self, arg0: collections.abc.Sequence[ActivationFunction]) -> None:
         ...
     def SetLossMSE(self) -> None:
         ...

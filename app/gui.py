@@ -1,7 +1,7 @@
 from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QImage
 from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QVBoxLayout, QTextEdit
 from PyQt6.QtCore import Qt, QLineF
-from network_core import Net
+from network_core import Net, ActivationFunction
 import math
 
 class Drawer(QWidget):
@@ -14,9 +14,9 @@ class Drawer(QWidget):
     self.text = TextField
 
     self.net = Net(4, [784, 500, 128, 10])
-    self.net.SetActivationRelu()
+    self.net.SetLayersAcivation([ActivationFunction.RELU, ActivationFunction.RELU, ActivationFunction.SIGMOID])
     self.net.SetLossMSE()
-    self.net.ReadFromBinary("../weights/weights1.bin")
+    self.net.ReadFromBinary("weights/weights2.bin")
 
 
   def clear_board(self):
@@ -68,18 +68,19 @@ class Drawer(QWidget):
     if max_val == 0:
         max_val = 1 
     flattened = []
-    for i in self.grid:
-      for j in i:
-        j /= max_val
-        if j > 0:
-          j = 1
-        flattened.append(j)
+    for i in range(len(self.grid)):
+      for j in range(len(self.grid[i])):
+        if self.grid[j][i] > 0:
+          flattened.append(1)
+        else:
+          flattened.append(0)
     result = self.net.ForwardPass(flattened)
     maximum = max(result)
     ans = 0
     for i in range(len(result)):
       if maximum == result[i]:
         ans = i
+      print(f"{i} - {result[i]:.2f}")
     self.text.setText(f"Recognized number {ans}")
 
 
@@ -100,6 +101,7 @@ class MainWindow(QMainWindow):
     self.clear_button.clicked.connect(self.paint.clear_board)
     self.display.setReadOnly(True)
     self.display.setMaximumHeight(100)
+    self.display.setFontPointSize(20)
 
     centralWidget = QWidget()
     self.setCentralWidget(centralWidget)

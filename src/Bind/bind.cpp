@@ -8,6 +8,11 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(network_core, core) {
   core.doc() = "Neural network core";
+  py::enum_<ActivationFunnctions>(core, "ActivationFunction")
+    .value("NO", ActivationFunnctions::NO)
+    .value("RELU", ActivationFunnctions::RELU)
+    .value("SIGMOID", ActivationFunnctions::SIGMOID);
+
   py::class_<Net>(core, "Net")
     .def(py::init<size_t, const std::vector<int>&>())
     .def("FillByZeros", &Net::fill_by_zeros)

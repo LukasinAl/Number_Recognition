@@ -266,6 +266,7 @@ double Net::ResolveActivation(ActivationFunnctions func, double x) const {
   if (func == ActivationFunnctions::NO) {
     return x;
   }
+  return x;
 }
 
 double Net::ResolveDerivative(ActivationFunnctions func, double x) const {
@@ -281,6 +282,7 @@ double Net::ResolveDerivative(ActivationFunnctions func, double x) const {
   if (func == ActivationFunnctions::SIGMOID) {
     return Sigmoid(x) * (1 - Sigmoid(x));
   }
+  return 1;
 }
 
 double Net::ReLu(double x) {

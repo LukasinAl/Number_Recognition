@@ -29,26 +29,24 @@ std::pair<int, std::vector<double>> ParceCsvLine(const std::string& line) {
 
 int main() {
   Net net(4, {784, 500, 128, 10});
-  net.SetActivationRelU();
   net.SetLossMSE();
   net.ReadFromBinary("weights/weights2.bin");
-  net.learning_step = 0.01;
+  net.learning_step = 0.003;
+  net.SetLayersActivations({ActivationFunnctions::RELU,
+                            ActivationFunnctions::RELU,
+                            ActivationFunnctions::SIGMOID});
 
   const int epochs = 1;
-  const int batch_size = 65;
+  const int batch_size = 64;
   int total_samples_processed = 0;  // counts all samples across epochs
 
   for (int ep = 0; ep < epochs; ++ep) {
-    std::ifstream file("data/mnist_train.csv");
+    std::ifstream file("data/emnist-digits-train.csv");
     if (!file.is_open()) {
-      throw std::runtime_error("Cannot open data/mnist_train.csv");
+      throw std::runtime_error("Cannot open data/emnist-digits-train.csv");
     }
-
-    // Skip header line if present (MNIST CSV often has a header)
     std::string line;
-    std::getline(file, line);  // skip first line (header)
 
-    // Prepare batch containers
     std::vector<std::vector<double>> batch_inputs;
     std::vector<std::vector<double>> batch_targets;
     batch_inputs.reserve(batch_size);
