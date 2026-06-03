@@ -3,6 +3,7 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
+#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -17,10 +18,10 @@ Net::Net(size_t lay, const std::vector<int>& sizes)
   if (layers_ != layer_sizes_.size()) {
     throw std::runtime_error("Too little layer sizes");
   }
-  activateOutput = false;
   learning_step = 0.01;
   fill_by_zeros();
-  SetActivationRelU();
+  activation_functions_.resize(layers_ - 1, ActivationFunnctions::RELU);
+  activation_functions_.back() = ActivationFunnctions::NO;
 }
 
 Net::Net(size_t lay, std::initializer_list<int> sizes)
@@ -33,9 +34,7 @@ std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
   }
   for (size_t i = 0; i < layers_ - 1; ++i) {
     temp = weights_[i] * temp + biases_[i];
-    if (i < layers_ - 2 || activateOutput) {
-      ApplyActivation(temp);
-    }
+    ApplyActivation(temp, i);
   }
   return temp.Transpose().matrix_values[0];
 }
@@ -56,18 +55,16 @@ std::vector<double> Net::TrainingForwardPass(const std::vector<double>& input) {
   for (size_t i = 0; i < layers_ - 1; ++i) {
     temp = weights_[i] * temp + biases_[i];
     last_pass_pre_acctivation.push_back(temp);
-    if (i < layers_ - 2 || activateOutput) {
-      ApplyActivation(temp);
-    }
+    ApplyActivation(temp, i);
     last_pass_activation.push_back(temp);
   }
   return temp.Transpose().matrix_values[0];
 }
 
-void Net::ApplyActivation(Matrix& vector) const {
+void Net::ApplyActivation(Matrix& vector, int layer) const {
   for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-    vector.matrix_values[i][0] =
-        activation_function_(vector.matrix_values[i][0]);
+    vector.matrix_values[i][0] = ResolveActivation(activation_functions_[layer],
+                                                   vector.matrix_values[i][0]);
   }
 }
 
@@ -104,30 +101,6 @@ void Net::FillBySmallRandomValues() {
   }
 }
 
-void Net::SetActivationRelU() {
-  activation_function_ = [](double x) {
-    if (x > 0) {
-      return x;
-    }
-    return 0.0;
-  };
-  activation_funtion_derivative_ = [](double x) {
-    if (x > 0) {
-      return 1.0;
-    }
-    return 0.0;
-  };
-}
-
-void Net::SetActivationSigmoid() {
-  activation_function_ = [](double x) {
-    return 1.0 / (1.0 + std::exp(-x));
-  };
-  activation_funtion_derivative_ = [](double x) {
-    return (std::exp(x) / std::pow(1 + std::exp(x), 2));
-  };
-}
-
 double Net::CalculateLoss(std::vector<double>& result,
                           std::vector<double>& expected) const {
   if (result.size() != expected.size()) {
@@ -157,7 +130,7 @@ std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
     if (i > 0) {
       Matrix derivative_pre_activation = last_pass_pre_acctivation[i - 1];
       for (auto& item : derivative_pre_activation.matrix_values) {
-        item[0] = activation_funtion_derivative_(item[0]);
+        item[0] = ResolveDerivative(activation_functions_[i - 1], item[0]);
       }
       biases_gradients[i - 1] =
           (weights_[i].Transpose() * biases_gradients[i])
@@ -189,8 +162,6 @@ void Net::DumpToBinary(const std::string& file_name) const {
   out.write(reinterpret_cast<const char*>(&layers_), sizeof(layers_));
   out.write(reinterpret_cast<const char*>(&learning_step),
             sizeof(learning_step));
-  out.write(reinterpret_cast<const char*>(&activateOutput),
-            sizeof(activateOutput));
   out.write(reinterpret_cast<const char*>(layer_sizes_.data()),
             layer_sizes_.size() * sizeof(int));
   for (size_t i = 0; i < biases_.size(); ++i) {
@@ -209,10 +180,12 @@ void Net::DumpToBinary(const std::string& file_name) const {
 
 void Net::ReadFromBinary(const std::string& file_name) {
   std::ifstream in(file_name, std::ios::binary);
+  if (!in.is_open()) {
+    throw std::runtime_error("Cannot open file" + file_name);
+  }
   in.read(reinterpret_cast<char*>(&layers_), sizeof(layers_));
   layer_sizes_.resize(layers_);
   in.read(reinterpret_cast<char*>(&learning_step), sizeof(learning_step));
-  in.read(reinterpret_cast<char*>(&activateOutput), sizeof(activateOutput));
   in.read(reinterpret_cast<char*>(layer_sizes_.data()),
           layer_sizes_.size() * sizeof(int));
   biases_.resize(layers_ - 1);
@@ -276,4 +249,48 @@ void Net::Train(const std::vector<std::vector<double>>& inputs,
       Step({weight_grad, biases_grad});
     }
   }
+}
+
+void Net::SetLayersActivations(
+    const std::vector<ActivationFunnctions>& functions) {
+  activation_functions_ = functions;
+}
+
+double Net::ResolveActivation(ActivationFunnctions func, double x) const {
+  if (func == ActivationFunnctions::RELU) {
+    return ReLu(x);
+  }
+  if (func == ActivationFunnctions::SIGMOID) {
+    return Sigmoid(x);
+  }
+  if (func == ActivationFunnctions::NO) {
+    return x;
+  }
+}
+
+double Net::ResolveDerivative(ActivationFunnctions func, double x) const {
+  if (func == ActivationFunnctions::NO) {
+    return 1;
+  }
+  if (func == ActivationFunnctions::RELU) {
+    if (x > 0) {
+      return 1;
+    }
+    return 0;
+  }
+  if (func == ActivationFunnctions::SIGMOID) {
+    return Sigmoid(x) * (1 - Sigmoid(x));
+  }
+}
+
+double Net::ReLu(double x) {
+  if (x > 0) {
+    return x;
+  } else {
+    return 0;
+  }
+}
+
+double Net::Sigmoid(double x) {
+  return 1.0 / (1 + std::exp(-x));
 }

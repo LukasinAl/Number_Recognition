@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "src/net/net.h"
+#include "../src/Net/net.h"
 
 std::pair<int, std::vector<double>> ParceCsvLine(const std::string& line) {
   std::stringstream ss(line);
@@ -31,75 +31,85 @@ int main() {
   Net net(4, {784, 500, 128, 10});
   net.SetActivationRelU();
   net.SetLossMSE();
-  net.FillBySmallRandomValues();
-  net.learning_step = 0.001;
-  net.DumpToBinary("weights/weights.bin");
+  net.ReadFromBinary("weights/weights2.bin");
+  net.learning_step = 0.01;
 
-  int epoch = 30;
-  int batchsize = 64;
-  int iter = 0;
+  const int epochs = 1;
+  const int batch_size = 65;
+  int total_samples_processed = 0;  // counts all samples across epochs
 
-  for (int ep = 0; ep < epoch; ++ep) {
+  for (int ep = 0; ep < epochs; ++ep) {
     std::ifstream file("data/mnist_train.csv");
     if (!file.is_open()) {
-      throw std::runtime_error("Cannot open file");
+      throw std::runtime_error("Cannot open data/mnist_train.csv");
     }
 
+    // Skip header line if present (MNIST CSV often has a header)
     std::string line;
+    std::getline(file, line);  // skip first line (header)
+
+    // Prepare batch containers
+    std::vector<std::vector<double>> batch_inputs;
+    std::vector<std::vector<double>> batch_targets;
+    batch_inputs.reserve(batch_size);
+    batch_targets.reserve(batch_size);
+
+    int samples_in_epoch = 0;
+
     while (std::getline(file, line)) {
-      if (line.empty()) {
+      if (line.empty())
         continue;
-      }
-      std::vector<double> input;
-      int label;
-      auto data = ParceCsvLine(line);
-      label = data.first;
-      input = data.second;
-      std::vector<double> expected(10, 0);
-      std::vector<double> result;
-      expected[label] = 1;
 
-      result = net.TrainingForwardPass(input);
-      auto grads = net.CalculateGradients(result, expected);
-      net.Step(grads);
-      iter++;
-      if (iter % 10000 == 0) {
-        net.DumpToBinary("weights/weights.bin");
-        std::cout << iter << '\n';
-      }
-    }
-    double total_loss = 0;
-    int correct = 0;
-    int total = 0;
-    std::ifstream test("data/mnist_test.csv");
-    if (!test.is_open()) {
-      throw std::runtime_error("Cannot open file");
-    }
-    while (std::getline(test, line)) {
-      if (line.empty()) {
-        continue;
-      }
-      std::vector<double> input;
-      int label;
       auto data = ParceCsvLine(line);
-      label = data.first;
-      input = data.second;
-      std::vector<double> expected(10, 0);
-      std::vector<double> result;
-      expected[label] = 1;
+      int label = data.first;
+      std::vector<double> input = data.second;
 
-      result = net.ForwardPass(input);
-      total_loss += net.CalculateLoss(result, expected);
-      total++;
-      double max = 1e6;
-      for (double item : result) {
-        max = std::max(max, item);
-      }
-      if (max == result[label] || result[label] > 0.01) {
-        correct++;
+      // One‑hot target
+      std::vector<double> target(10, 0.0);
+      target[label] = 1.0;
+
+      batch_inputs.push_back(input);
+      batch_targets.push_back(target);
+      samples_in_epoch++;
+
+      // When batch is full, train on it
+      if (batch_inputs.size() == batch_size) {
+        net.Train(batch_inputs, batch_targets, 1, batch_size);
+        total_samples_processed += batch_size;
+
+        // Save weights every 10,000 samples
+        if (total_samples_processed % 1000 == 0) {
+          net.DumpToBinary("weights/weights2.bin");
+          std::cout << "Saved weights after " << total_samples_processed
+                    << " samples\n";
+        }
+
+        // Clear batch
+        batch_inputs.clear();
+        batch_targets.clear();
       }
     }
-    std::cout << "Total loss:" << total_loss << '\n';
-    std::cout << "Coorrect:" << static_cast<double>(correct) / static_cast<double>(total) * 100.0 << "%\n";
+
+    // Process any remaining samples (partial batch)
+    if (!batch_inputs.empty()) {
+      int actual_batch_size = batch_inputs.size();
+      net.Train(batch_inputs, batch_targets, 1, actual_batch_size);
+      total_samples_processed += actual_batch_size;
+      if (total_samples_processed % 10000 == 0 ||
+          total_samples_processed % 10000 < actual_batch_size) {
+        net.DumpToBinary("weights/weights2.bin");
+        std::cout << "Saved weights after " << total_samples_processed
+                  << " samples (final batch)\n";
+      }
+    }
+
+    std::cout << "Epoch " << ep + 1 << " finished. Total samples processed: "
+              << total_samples_processed << "\n";
   }
+
+  // Final save
+  net.DumpToBinary("weights/weights2.bin");
+  std::cout << "Training complete. Final weights saved.\n";
+
+  return 0;
 }

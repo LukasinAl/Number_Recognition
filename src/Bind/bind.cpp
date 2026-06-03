@@ -14,11 +14,11 @@ PYBIND11_MODULE(network_core, core) {
     .def("FillByRandomValues", &Net::FillBySmallRandomValues)
     .def("ForwardPass", py::overload_cast<const std::vector<double>&>(&Net::ForwardPass, py::const_))
     .def("TrainingForwardPass", &Net::TrainingForwardPass)
-    .def("SetActivationRelu", &Net::SetActivationRelU)
-    .def("SetActivationSigmoid", &Net::SetActivationSigmoid)
+    .def("SetLayersAcivation", &Net::SetLayersActivations)
     .def("CalculateLoss", &Net::CalculateLoss)
     .def("SetLossMSE", &Net::SetLossMSE)
     .def("Train", &Net::Train)
     .def("DumpToBinary", &Net::DumpToBinary)
-    .def("ReadFromBinary", &Net::ReadFromBinary);
+    .def("ReadFromBinary", &Net::ReadFromBinary)
+    .def_readwrite("learning_step", &Net::learning_step);
 }

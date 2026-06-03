@@ -5,6 +5,8 @@
 #include <vector>
 #include "../Matrix/Matrix.h"
 
+enum class ActivationFunnctions {RELU, SIGMOID, NO};
+
 class Net {
  private:
   size_t layers_;
@@ -13,13 +15,13 @@ class Net {
   std::vector<Matrix> biases_;
   std::vector<Matrix> last_pass_activation;
   std::vector<Matrix> last_pass_pre_acctivation;
-  std::function<double(double)> activation_function_;
-  std::function<double(double)> activation_funtion_derivative_;
+  std::vector<ActivationFunnctions> activation_functions_;
   std::function<double(std::vector<double>&, std::vector<double>&)>
       loss_function_;
 
  public:
-  bool activateOutput;
+  static double ReLu(double x);
+  static double Sigmoid(double x);
   double learning_step;
   Net(size_t lay, const std::vector<int>& sizes);
   Net(size_t lay, std::initializer_list<int> sizes);
@@ -28,9 +30,10 @@ class Net {
   std::vector<double> ForwardPass(const std::vector<double>& input) const;
   std::vector<double> ForwardPass(std::initializer_list<double> inputT) const;
   std::vector<double> TrainingForwardPass(const std::vector<double>& input);
-  void ApplyActivation(Matrix& vector) const;
-  void SetActivationRelU();
-  void SetActivationSigmoid();
+  void ApplyActivation(Matrix& vector, int layer) const;
+  void SetLayersActivations(const std::vector<ActivationFunnctions>& functions);
+  double ResolveActivation(ActivationFunnctions func, double x) const;
+  double ResolveDerivative(ActivationFunnctions func, double x) const;
   double CalculateLoss(std::vector<double>& result,
                        std::vector<double>& expected) const;
   void SetLossMSE();
