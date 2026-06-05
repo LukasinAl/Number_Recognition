@@ -1,9 +1,7 @@
 FROM alpine:latest as compile
 RUN apk add --no-cache make cmake gcc bash
 WORKDIR /build
-COPY src src
-COPY build.sh build.sh
-COPY CMakeLists.txt CMakeLists.txt
+COPY . .  
 RUN ./build.sh
 
 

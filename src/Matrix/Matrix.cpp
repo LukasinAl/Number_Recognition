@@ -74,7 +74,8 @@ Matrix Matrix::Transpose() const {
 
 Matrix Matrix::operator*(const Matrix& other) const {
   if (m != other.n) {
-    throw std::runtime_error("Bad dimentions");
+    throw std::runtime_error("Wrong dimentions in operator*" +
+                             std::to_string(m) + " " + std::to_string(other.n));
   }
   std::vector<std::vector<double>> temp(n, std::vector<double>(other.m, 0));
   int c = 0;
@@ -96,7 +97,7 @@ Matrix& Matrix::operator*=(const Matrix& other) {
 
 Matrix Matrix::operator+(const Matrix& other) const {
   if (n != other.n || m != other.m) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::runtime_error("Wrong dimentions in operator+");
   }
   std::vector<std::vector<double>> temp(n, std::vector<double>(m, 0));
   for (size_t i = 0; i < n; ++i) {
@@ -206,7 +207,7 @@ void Matrix::LoadFromTxt(const std::string& file_name) {
 
 Matrix Matrix::ElementWiseMultiplication(const Matrix& other) const {
   if (n != other.n || m != other.m) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::runtime_error("Wrong dimentions in ElementWiseMultiplication");
   }
   Matrix res(n, m, 0);
   for (size_t i = 0; i < n; ++i)
