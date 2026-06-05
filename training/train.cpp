@@ -36,8 +36,8 @@ int main() {
                             ActivationFunnctions::RELU,
                             ActivationFunnctions::SIGMOID});
 
-  const int epochs = 1;
-  const int batch_size = 64;
+  const int epochs = 2;
+  const int batch_size = 35;
   int total_samples_processed = 0;  // counts all samples across epochs
 
   for (int ep = 0; ep < epochs; ++ep) {
@@ -72,7 +72,7 @@ int main() {
 
       // When batch is full, train on it
       if (batch_inputs.size() == batch_size) {
-        net.Train(batch_inputs, batch_targets, 1, batch_size);
+        net.BatchTrain(batch_inputs, batch_targets, 1, batch_size);
         total_samples_processed += batch_size;
 
         // Save weights every 10,000 samples
@@ -91,7 +91,7 @@ int main() {
     // Process any remaining samples (partial batch)
     if (!batch_inputs.empty()) {
       int actual_batch_size = batch_inputs.size();
-      net.Train(batch_inputs, batch_targets, 1, actual_batch_size);
+      net.BatchTrain(batch_inputs, batch_targets, 1, actual_batch_size);
       total_samples_processed += actual_batch_size;
       if (total_samples_processed % 10000 == 0 ||
           total_samples_processed % 10000 < actual_batch_size) {
