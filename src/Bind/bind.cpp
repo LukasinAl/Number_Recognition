@@ -23,6 +23,7 @@ PYBIND11_MODULE(network_core, core) {
     .def("CalculateLoss", &Net::CalculateLoss)
     .def("SetLossMSE", &Net::SetLossMSE)
     .def("Train", &Net::Train)
+    .def("BatchTrain", Net::BatchTrain)
     .def("DumpToBinary", &Net::DumpToBinary)
     .def("ReadFromBinary", &Net::ReadFromBinary)
     .def_readwrite("learning_step", &Net::learning_step);
