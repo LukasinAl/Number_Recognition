@@ -1,8 +1,15 @@
 from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QImage
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QVBoxLayout, QTextEdit
+from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QVBoxLayout, QTextEdit, QHBoxLayout, QComboBox
 from PyQt6.QtCore import Qt, QLineF
 from network_core import Net, ActivationFunction
 import math
+import csv
+import os
+import pathlib
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+weights_path = os.path.join(script_dir, "../weights", "weights2.bin")
+save_path = os.path.join(script_dir, "handwritten_data.csv")
 
 class Drawer(QWidget):
   def __init__(self, TextField=None):
@@ -16,7 +23,7 @@ class Drawer(QWidget):
     self.net = Net(4, [784, 500, 128, 10])
     self.net.SetLayersAcivation([ActivationFunction.RELU, ActivationFunction.RELU, ActivationFunction.SIGMOID])
     self.net.SetLossMSE()
-    self.net.ReadFromBinary("weights/weights2.bin")
+    self.net.ReadFromBinary(weights_path)
 
 
   def clear_board(self):
@@ -93,26 +100,51 @@ class MainWindow(QMainWindow):
     self.setMinimumSize(800, 800)
 
     self.display = QTextEdit()
+    self.input = QComboBox()
     self.paint = Drawer(self.display)
 
     self.clear_button = QPushButton("Clear", self)
-    self.button = QPushButton("What Number", self)
-    self.button.clicked.connect(self.paint.categorize_number)
+    self.classification_button = QPushButton("What Number", self)
+    self.save_button = QPushButton("Save sample")
+    self.classification_button.clicked.connect(self.paint.categorize_number)
     self.clear_button.clicked.connect(self.paint.clear_board)
+    self.save_button.clicked.connect(self.save)
+
     self.display.setReadOnly(True)
     self.display.setMaximumHeight(100)
     self.display.setFontPointSize(20)
+    self.input.setMaximumHeight(20)
+    self.input.setMaximumWidth(100)
+    self.input.setMaxVisibleItems(10)
+    self.input.addItems([str(i) for i in range(10)])
 
     centralWidget = QWidget()
     self.setCentralWidget(centralWidget)
     
     layout = QVBoxLayout(centralWidget)
     layout.addWidget(self.paint)
-    layout.addWidget(self.clear_button)
-    layout.addWidget(self.button)
+    button_layout = QHBoxLayout()
+    button_layout.addWidget(self.clear_button)
+    button_layout.addWidget(self.classification_button)
+    button_layout.addWidget(self.save_button)
+    button_layout.addWidget(self.input)
+    layout.addLayout(button_layout)
     layout.addWidget(self.display)
+  
+  def save(self):
+    with open(save_path, "a", newline="") as file:
+      writer = csv.writer(file)
+      flattened = [self.input.currentIndex()]
+      for i in range(len(self.paint.grid)):
+        for j in range(len(self.paint.grid[i])):
+          if self.paint.grid[j][i] > 0:
+            flattened.append(1)
+          else:
+            flattened.append(0)
+      writer.writerow(flattened)
 
 app = QApplication([])
+app.setStyle("Windows")
 window = MainWindow()
 window.show()
 app.exec()
