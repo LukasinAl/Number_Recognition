@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -31,14 +32,16 @@ int main() {
   Net net(4, {784, 500, 128, 10});
   net.SetLossMSE();
   net.ReadFromBinary("weights/weights2.bin");
-  net.learning_step = 0.003;
+  net.learning_step = 0.001;
   net.SetLayersActivations({ActivationFunnctions::RELU,
                             ActivationFunnctions::RELU,
                             ActivationFunnctions::SIGMOID});
 
-  const int epochs = 2;
+  const int epochs = 1;
   const int batch_size = 35;
   int total_samples_processed = 0;  // counts all samples across epochs
+  int affectedPixels = 784;
+  double noise = 0.03;
 
   for (int ep = 0; ep < epochs; ++ep) {
     std::ifstream file("data/emnist-digits-train.csv");
@@ -54,6 +57,11 @@ int main() {
 
     int samples_in_epoch = 0;
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist_int(0, 783);
+    std::uniform_real_distribution<double> dist_double(-noise, noise);
+
     while (std::getline(file, line)) {
       if (line.empty())
         continue;
@@ -61,8 +69,14 @@ int main() {
       auto data = ParceCsvLine(line);
       int label = data.first;
       std::vector<double> input = data.second;
+      for (int i = 0; i < affectedPixels; ++i) {
+        int index = dist_int(gen);
+        double val = dist_double(gen);
+        input[index] += val;
+        input[index] = std::max(0.0, input[index]);
+        input[index] = std::min(1.0, input[index]);
+      }
 
-      // One‑hot target
       std::vector<double> target(10, 0.0);
       target[label] = 1.0;
 
@@ -70,25 +84,19 @@ int main() {
       batch_targets.push_back(target);
       samples_in_epoch++;
 
-      // When batch is full, train on it
       if (batch_inputs.size() == batch_size) {
         net.BatchTrain(batch_inputs, batch_targets, 1, batch_size);
         total_samples_processed += batch_size;
 
-        // Save weights every 10,000 samples
         if (total_samples_processed % 1000 == 0) {
           net.DumpToBinary("weights/weights2.bin");
           std::cout << "Saved weights after " << total_samples_processed
                     << " samples\n";
         }
-
-        // Clear batch
         batch_inputs.clear();
         batch_targets.clear();
       }
     }
-
-    // Process any remaining samples (partial batch)
     if (!batch_inputs.empty()) {
       int actual_batch_size = batch_inputs.size();
       net.BatchTrain(batch_inputs, batch_targets, 1, actual_batch_size);
@@ -104,8 +112,6 @@ int main() {
     std::cout << "Epoch " << ep + 1 << " finished. Total samples processed: "
               << total_samples_processed << "\n";
   }
-
-  // Final save
   net.DumpToBinary("weights/weights2.bin");
   std::cout << "Training complete. Final weights saved.\n";
 
