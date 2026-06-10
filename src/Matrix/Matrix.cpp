@@ -10,22 +10,25 @@
 
 Matrix::Matrix(size_t height, size_t width, double default_values)
     : n(height), m(width) {
+  if (height == 0 || width == 0) {
+    throw std::invalid_argument("Zero length");
+  }
   matrix_values = std::vector<std::vector<double>>(
       n, std::vector<double>(m, default_values));
 }
 
 Matrix::Matrix(const std::vector<std::vector<double>>& values) {
   if (values.empty()) {
-    throw std::runtime_error("Zero length");
+    throw std::length_error("Zero length");
   }
   if (values[0].empty()) {
-    throw std::runtime_error("Zero length");
+    throw std::length_error("Zero length");
   }
   n = values.size();
   m = values[0].size();
   for (const std::vector<double>& row : values) {
     if (row.size() != m) {
-      throw std::runtime_error("Inconsistent lenght");
+      throw std::length_error("Inconsistent lenght");
     }
   }
   matrix_values = values;
@@ -63,6 +66,9 @@ Matrix::Matrix(const std::vector<double>& input) : Matrix(input.size(), 1, 0) {
 }
 
 Matrix Matrix::Transpose() const {
+  if (n == 0 || m == 0) {
+    throw std::length_error("Zero dimnention in Transpose()");
+  }
   std::vector<std::vector<double>> temp(m, std::vector<double>(n));
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = 0; j < m; ++j) {
@@ -74,7 +80,7 @@ Matrix Matrix::Transpose() const {
 
 Matrix Matrix::operator*(const Matrix& other) const {
   if (m != other.n) {
-    throw std::runtime_error("Wrong dimentions in operator*" +
+    throw std::length_error("Wrong dimentions in operator*" +
                              std::to_string(m) + " " + std::to_string(other.n));
   }
   std::vector<std::vector<double>> temp(n, std::vector<double>(other.m, 0));
@@ -97,7 +103,7 @@ Matrix& Matrix::operator*=(const Matrix& other) {
 
 Matrix Matrix::operator+(const Matrix& other) const {
   if (n != other.n || m != other.m) {
-    throw std::runtime_error("Wrong dimentions in operator+");
+    throw std::length_error("Wrong dimentions in operator+");
   }
   std::vector<std::vector<double>> temp(n, std::vector<double>(m, 0));
   for (size_t i = 0; i < n; ++i) {
@@ -182,6 +188,9 @@ Matrix Matrix::identity(size_t size) {
 
 void Matrix::LoadFromTxt(const std::string& file_name) {
   std::ifstream file(file_name);
+  if (!file.is_open()) {
+    throw std::runtime_error("Cannot open file");
+  }
   std::vector<double> values;
   double val;
   while (file >> val) {

@@ -6,6 +6,7 @@
 #include "../Matrix/Matrix.h"
 
 enum class ActivationFunnctions { RELU, SIGMOID, SOFTMAX, NO };
+enum class LossFunctions { MSE, CROSSENROPY };
 
 class Net {
  private:
