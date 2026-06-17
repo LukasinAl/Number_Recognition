@@ -29,19 +29,21 @@ std::pair<int, std::vector<double>> ParceCsvLine(const std::string& line) {
 }
 
 int main() {
-  Net net(4, {784, 500, 128, 10});
-  net.SetLossMSE();
-  net.ReadFromBinary("weights/weights2.bin");
+  Net net(5, {784, 500, 300, 128, 10});
+  net.FillBySmallRandomValues();
+  net.ReadFromBinary("weights/weights2softmaxBIG.bin");
   net.learning_step = 0.001;
+  net.SetLoss(LossFunctions::CROSSENTROPY);
   net.SetLayersActivations({ActivationFunnctions::RELU,
                             ActivationFunnctions::RELU,
-                            ActivationFunnctions::SIGMOID});
+                            ActivationFunnctions::RELU,
+                            ActivationFunnctions::SOFTMAX});
 
   const int epochs = 1;
-  const int batch_size = 35;
+  const int batch_size = 256;
   int total_samples_processed = 0;  // counts all samples across epochs
   int affectedPixels = 784;
-  double noise = 0.03;
+  double noise = 0.08;
 
   for (int ep = 0; ep < epochs; ++ep) {
     std::ifstream file("data/emnist-digits-train.csv");
@@ -89,7 +91,7 @@ int main() {
         total_samples_processed += batch_size;
 
         if (total_samples_processed % 1000 == 0) {
-          net.DumpToBinary("weights/weights2.bin");
+          net.DumpToBinary("weights/weights2softmaxBIG.bin");
           std::cout << "Saved weights after " << total_samples_processed
                     << " samples\n";
         }
@@ -103,7 +105,7 @@ int main() {
       total_samples_processed += actual_batch_size;
       if (total_samples_processed % 10000 == 0 ||
           total_samples_processed % 10000 < actual_batch_size) {
-        net.DumpToBinary("weights/weights2.bin");
+        net.DumpToBinary("weights/weights2softmaxBIG.bin");
         std::cout << "Saved weights after " << total_samples_processed
                   << " samples (final batch)\n";
       }
@@ -112,7 +114,7 @@ int main() {
     std::cout << "Epoch " << ep + 1 << " finished. Total samples processed: "
               << total_samples_processed << "\n";
   }
-  net.DumpToBinary("weights/weights2.bin");
+  net.DumpToBinary("weights/weights2softmaxBIG.bin");
   std::cout << "Training complete. Final weights saved.\n";
 
   return 0;

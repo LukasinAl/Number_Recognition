@@ -11,7 +11,12 @@ PYBIND11_MODULE(network_core, core) {
   py::enum_<ActivationFunnctions>(core, "ActivationFunction")
     .value("NO", ActivationFunnctions::NO)
     .value("RELU", ActivationFunnctions::RELU)
+    .value("SOFTMAX", ActivationFunnctions::SOFTMAX)
     .value("SIGMOID", ActivationFunnctions::SIGMOID);
+  
+  py::enum_<LossFunctions>(core, "LossFunction")
+    .value("MSE", LossFunctions::MSE)
+    .value("CROSSENROPY", LossFunctions::CROSSENTROPY);
 
   py::class_<Net>(core, "Net")
     .def(py::init<size_t, const std::vector<int>&>())
@@ -21,7 +26,7 @@ PYBIND11_MODULE(network_core, core) {
     .def("TrainingForwardPass", &Net::TrainingForwardPass)
     .def("SetLayersAcivation", &Net::SetLayersActivations)
     .def("CalculateLoss", &Net::CalculateLoss)
-    .def("SetLossMSE", &Net::SetLossMSE)
+    .def("SetLoss", &Net::SetLoss)
     .def("Train", &Net::Train)
     .def("BatchTrain", &Net::BatchTrain)
     .def("DumpToBinary", &Net::DumpToBinary)

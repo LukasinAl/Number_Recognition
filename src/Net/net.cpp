@@ -105,19 +105,23 @@ Matrix Net::BatchTrainingForwardPass(
 }
 
 void Net::ApplyActivation(Matrix& vector, int layer) const {
-  // if (activation_functions_[layer] == ActivationFunnctions::SOFTMAX) {
-  //   for (size_t vec = 0; vec < vector.matrix_values[0].size(); ++vec) {
-  //     double statsum = 0;
-  //     for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-  //       vector.matrix_values[i][vec] = std::exp(vector.matrix_values[i][vec]);
-  //       statsum += vector.matrix_values[i][vec];
-  //     }
-  //     for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-  //       vector.matrix_values[i][vec] /= statsum;
-  //     }
-  //   }
-  //   return;
-  // }
+  if (activation_functions_[layer] == ActivationFunnctions::SOFTMAX) {
+    for (size_t vec = 0; vec < vector.matrix_values[0].size(); ++vec) {
+      double statsum = 0;
+      double min = vector.matrix_values[0][vec];
+      for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
+        min = std::min(min, vector.matrix_values[i][vec]);
+      }
+      for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
+        vector.matrix_values[i][vec] = std::exp(vector.matrix_values[i][vec] - min);
+        statsum += vector.matrix_values[i][vec];
+      }
+      for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
+        vector.matrix_values[i][vec] /= statsum;
+      }
+    }
+    return;
+  }
   for (size_t vec = 0; vec < vector.matrix_values[0].size(); ++vec) {
     for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
       vector.matrix_values[i][vec] = ResolveActivation(
@@ -161,30 +165,48 @@ void Net::FillBySmallRandomValues() {
 
 double Net::CalculateLoss(std::vector<double>& result,
                           std::vector<double>& expected) const {
-  if (result.size() != expected.size()) {
+  if (result.size() != expected.size() || result.size() == 0) {
     throw std::runtime_error("Wrong dimentions");
   }
-  return loss_function_(result, expected);
+  if (lossfunc == LossFunctions::MSE) {
+    double ans = 0;
+    for (size_t i = 0; i < result.size(); ++i) {
+      ans += std::pow(expected[i] - result[i], 2);
+    }
+    return ans;
+  }
+  if (lossfunc == LossFunctions::CROSSENTROPY) {
+    double ans = 0;
+    for (size_t i = 0; i < result.size(); ++i) {
+      ans -= expected[i] * std::log(result[i] + 1e-12);
+    }
+    return ans;
+  }
+  return -1;
 }
 
-void Net::SetLossMSE() {
-  loss_function_ = [](std::vector<double>& first, std::vector<double>& second) {
-    double result = 0.0;
-    for (size_t i = 0; i < first.size(); ++i) {
-      result += std::pow(first[i] - second[i], 2);
-    }
-    return result;
-  };
+void Net::SetLoss(const LossFunctions func) {
+  lossfunc = func;
 }
 
 std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
     const std::vector<double>& result, const std::vector<double>& expected,
     std::vector<Matrix>& last_pass_activation,
     std::vector<Matrix>& last_pass_pre_acctivation) const {
-  //Loss function MSE support for now
   std::vector<Matrix> weights_gradients(layers_ - 1);
   std::vector<Matrix> biases_gradients(layers_ - 1);
-  biases_gradients[layers_ - 2] = 2 * (Matrix(result) - Matrix(expected));
+
+  if (lossfunc == LossFunctions::MSE &&
+      activation_functions_.back() == ActivationFunnctions::NO) {
+    biases_gradients[layers_ - 2] =
+        2 * (Matrix(result) - Matrix(expected));
+  } else if (lossfunc == LossFunctions::CROSSENTROPY &&
+             activation_functions_.back() == ActivationFunnctions::SOFTMAX) {
+    biases_gradients[layers_ - 2] = Matrix(result) - Matrix(expected);
+  } else {
+    throw std::runtime_error("This combination is not supported yet");
+  }
+
   for (int i = layers_ - 2; i >= 0; --i) {
     if (i > 0) {
       Matrix derivative_pre_activation = last_pass_pre_acctivation[i - 1];
@@ -204,11 +226,20 @@ Net::BatchCalculateGradients(
     const Matrix& result, const Matrix& expected,
     std::vector<Matrix>& last_pass_activation,
     std::vector<Matrix>& last_pass_pre_acctivation) const {
-  //Loss function MSE support for now
   std::vector<Matrix> weights_gradients(layers_ - 1);
   std::vector<Matrix> biases_gradients(layers_ - 1);
-  biases_gradients[layers_ - 2] =
-      2 * (result.Transpose() - expected.Transpose());
+
+  if (lossfunc == LossFunctions::MSE &&
+      activation_functions_.back() == ActivationFunnctions::NO) {
+    biases_gradients[layers_ - 2] =
+        2 * (result.Transpose() - expected.Transpose());
+  } else if (lossfunc == LossFunctions::CROSSENTROPY &&
+             activation_functions_.back() == ActivationFunnctions::SOFTMAX) {
+    biases_gradients[layers_ - 2] = result.Transpose() - expected.Transpose();
+  } else {
+    throw std::runtime_error("This combination is not supported yet");
+  }
+
   for (int i = layers_ - 2; i >= 0; --i) {
     if (i > 0) {
       Matrix derivative_pre_activation = last_pass_pre_acctivation[i - 1];
@@ -217,8 +248,9 @@ Net::BatchCalculateGradients(
           (weights_[i].Transpose() * biases_gradients[i])
               .ElementWiseMultiplication(derivative_pre_activation);
     }
-    weights_gradients[i] =
-        biases_gradients[i] * last_pass_activation[i].Transpose();
+    weights_gradients[i] = biases_gradients[i] *
+                           last_pass_activation[i].Transpose() *
+                           (1.0 / result.matrix_values.size());
     biases_gradients[i] =
         biases_gradients[i] *
         Matrix(std::vector<std::vector<double>>(result.matrix_values.size(),
@@ -229,20 +261,6 @@ Net::BatchCalculateGradients(
 }
 
 void Net::ApplyDerivative(Matrix& vector, int layer) const {
-  // if (activation_functions_[layer] == ActivationFunnctions::SOFTMAX) {
-  //   for (size_t l = 0; l < vector.matrix_values[0].size(); ++l) {
-  //     double statsum = 0;
-  //     for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-  //       vector.matrix_values[i][l] = std::exp(vector.matrix_values[i][l]);
-  //       statsum += vector.matrix_values[i][l];
-  //     }
-  //     for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-  //       vector.matrix_values[i][l] /= statsum;
-  //       vector.matrix_values[i][l] =
-  //           vector.matrix_values[i][l] * (1 - vector.matrix_values[i][l]);
-  //     }
-  //   }
-  // }
   for (auto& item : vector.matrix_values) {
     for (size_t i = 0; i < item.size(); ++i) {
       item[i] = ResolveDerivative(activation_functions_[layer], item[i]);
@@ -384,6 +402,15 @@ void Net::BatchTrain(const std::vector<std::vector<double>>& inputs,
 
 void Net::SetLayersActivations(
     const std::vector<ActivationFunnctions>& functions) {
+  if (functions.size() != layers_ - 1) {
+    throw std::length_error(
+        "Nmber of functions does not match number of layers with activation");
+  }
+  for (size_t i = 0; i < functions.size() - 1; ++i) {
+    if (functions[i] == ActivationFunnctions::SOFTMAX) {
+      throw std::logic_error("Cannot apply softmax to hidden layers");
+    }
+  }
   activation_functions_ = functions;
 }
 

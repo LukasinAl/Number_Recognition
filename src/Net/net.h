@@ -6,7 +6,7 @@
 #include "../Matrix/Matrix.h"
 
 enum class ActivationFunnctions { RELU, SIGMOID, SOFTMAX, NO };
-enum class LossFunctions { MSE, CROSSENROPY };
+enum class LossFunctions { MSE, CROSSENTROPY };
 
 class Net {
  private:
@@ -15,8 +15,7 @@ class Net {
   std::vector<Matrix> weights_;
   std::vector<Matrix> biases_;
   std::vector<ActivationFunnctions> activation_functions_;
-  std::function<double(std::vector<double>&, std::vector<double>&)>
-      loss_function_;
+  LossFunctions lossfunc;
 
  public:
   static double ReLu(double x);
@@ -39,11 +38,11 @@ class Net {
   void ApplyActivation(Matrix& vector, int layer) const;
   void ApplyDerivative(Matrix& vector, int layer) const;
   void SetLayersActivations(const std::vector<ActivationFunnctions>& functions);
+  void SetLoss(const LossFunctions func);
   double ResolveActivation(ActivationFunnctions func, double x) const;
   double ResolveDerivative(ActivationFunnctions func, double x) const;
   double CalculateLoss(std::vector<double>& result,
                        std::vector<double>& expected) const;
-  void SetLossMSE();
   std::pair<std::vector<Matrix>, std::vector<Matrix>> CalculateGradients(
       const std::vector<double>& result, const std::vector<double>& expected,
       std::vector<Matrix>& last_pass_activation,
