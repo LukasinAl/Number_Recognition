@@ -3,7 +3,6 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
-#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -113,7 +112,8 @@ void Net::ApplyActivation(Matrix& vector, int layer) const {
         min = std::min(min, vector.matrix_values[i][vec]);
       }
       for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
-        vector.matrix_values[i][vec] = std::exp(vector.matrix_values[i][vec] - min);
+        vector.matrix_values[i][vec] =
+            std::exp(vector.matrix_values[i][vec] - min);
         statsum += vector.matrix_values[i][vec];
       }
       for (size_t i = 0; i < vector.matrix_values.size(); ++i) {
@@ -198,8 +198,7 @@ std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
 
   if (lossfunc == LossFunctions::MSE &&
       activation_functions_.back() == ActivationFunnctions::NO) {
-    biases_gradients[layers_ - 2] =
-        2 * (Matrix(result) - Matrix(expected));
+    biases_gradients[layers_ - 2] = 2 * (Matrix(result) - Matrix(expected));
   } else if (lossfunc == LossFunctions::CROSSENTROPY &&
              activation_functions_.back() == ActivationFunnctions::SOFTMAX) {
     biases_gradients[layers_ - 2] = Matrix(result) - Matrix(expected);
@@ -285,6 +284,9 @@ void Net::Step(std::pair<std::vector<Matrix>, std::vector<Matrix>> gradients) {
 
 void Net::DumpToBinary(const std::string& file_name) const {
   std::ofstream out(file_name, std::ios::binary);
+  if (!out.is_open()) {
+    throw std::runtime_error("Cannot open file" + file_name);
+  }
   out.write(reinterpret_cast<const char*>(&layers_), sizeof(layers_));
   out.write(reinterpret_cast<const char*>(&learning_step),
             sizeof(learning_step));
@@ -301,6 +303,33 @@ void Net::DumpToBinary(const std::string& file_name) const {
           reinterpret_cast<const char*>(weights_[i].matrix_values[row].data()),
           weights_[i].matrix_values[row].size() * sizeof(double));
     }
+  }
+  int val = 0;
+  if (lossfunc == LossFunctions::MSE) {
+    val = 1;
+  } else if (lossfunc == LossFunctions::CROSSENTROPY) {
+    val = 2;
+  }
+  if (val == 0) {
+    throw std::runtime_error("No Loss was set");
+  }
+  out.write(reinterpret_cast<const char*>(&val), sizeof(val));
+  for (size_t i = 0; i < activation_functions_.size(); ++i) {
+    int v = 0;
+    if (activation_functions_[i] == ActivationFunnctions::NO) {
+      v = 1;
+    } else if (activation_functions_[i] == ActivationFunnctions::RELU) {
+      v = 2;
+    } else if (activation_functions_[i] == ActivationFunnctions::SIGMOID) {
+      v = 3;
+    } else if (activation_functions_[i] == ActivationFunnctions::SOFTMAX) {
+      v = 4;
+    }
+    if (v == 0) {
+      throw std::runtime_error("No activation was set for layer " +
+                               std::to_string(i));
+    }
+    out.write(reinterpret_cast<const char*>(&v), sizeof(v));
   }
 }
 
@@ -327,6 +356,27 @@ void Net::ReadFromBinary(const std::string& file_name) {
     for (size_t row = 0; row < layer_sizes_[i + 1]; ++row) {
       in.read(reinterpret_cast<char*>(weights_[i].matrix_values[row].data()),
               layer_sizes_[i] * sizeof(double));
+    }
+  }
+  int val = 0;
+  in.read(reinterpret_cast<char*>(&val), sizeof(val));
+  if (val == 1) {
+    lossfunc = LossFunctions::MSE;
+  } else if (val == 2) {
+    lossfunc = LossFunctions::CROSSENTROPY;
+  }
+  activation_functions_.resize(layers_ - 1);
+  for (size_t i = 0; i < layers_ - 1; ++i) {
+    int v = 0;
+    in.read(reinterpret_cast<char*>(&v), sizeof(v));
+    if (v == 1) {
+      activation_functions_[i] = ActivationFunnctions::NO;
+    } else if (v == 2) {
+      activation_functions_[i] = ActivationFunnctions::RELU;
+    } else if (v == 3) {
+      activation_functions_[i] = ActivationFunnctions::SIGMOID;
+    } else if (v == 4) {
+      activation_functions_[i] = ActivationFunnctions::SOFTMAX;
     }
   }
 }

@@ -27,8 +27,6 @@ class Drawer(QWidget):
     self.text = TextField ## Text field used to display information
 
     self.net = Net(4, [784, 500, 128, 10])
-    self.net.SetLayersAcivation([ActivationFunction.RELU, ActivationFunction.RELU, ActivationFunction.SIGMOID])
-    self.net.SetLoss(LossFunction.MSE)
     self.net.ReadFromBinary(weights_path)
 
 
