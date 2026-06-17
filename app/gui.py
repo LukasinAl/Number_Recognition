@@ -1,7 +1,7 @@
 from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QImage
 from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QVBoxLayout, QTextEdit, QHBoxLayout, QComboBox
 from PyQt6.QtCore import Qt, QLineF
-from network_core import Net, ActivationFunction
+from network_core import Net, ActivationFunction, LossFunction
 import math
 import csv
 import os
@@ -28,7 +28,7 @@ class Drawer(QWidget):
 
     self.net = Net(4, [784, 500, 128, 10])
     self.net.SetLayersAcivation([ActivationFunction.RELU, ActivationFunction.RELU, ActivationFunction.SIGMOID])
-    self.net.SetLossMSE()
+    self.net.SetLoss(LossFunction.MSE)
     self.net.ReadFromBinary(weights_path)
 
 

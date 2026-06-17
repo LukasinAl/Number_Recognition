@@ -1,4 +1,5 @@
 #include "Matrix.h"
+
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -81,17 +82,43 @@ Matrix Matrix::Transpose() const {
 Matrix Matrix::operator*(const Matrix& other) const {
   if (m != other.n) {
     throw std::length_error("Wrong dimentions in operator*" +
-                             std::to_string(m) + " " + std::to_string(other.n));
+                            std::to_string(m) + " " + std::to_string(other.n));
   }
   std::vector<std::vector<double>> temp(n, std::vector<double>(other.m, 0));
-  int c = 0;
-  for (const std::vector<double>& row : matrix_values) {
-    for (size_t i = 0; i < other.m; ++i) {
-      for (size_t j = 0; j < other.n; ++j) {
-        temp[c][i] += row[j] * other.matrix_values[j][i];
+  if (n * m * other.m < 10e4) {  // use cache friendly loop
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t k = 0; k < m; ++k) {
+        for (size_t j = 0; j < other.m; ++j) {
+          temp[i][j] += matrix_values[i][k] * other.matrix_values[k][j];
+        }
       }
     }
-    c++;
+  } else { //use single vector to ensure coonstinious data layout
+    std::vector<double> first_flattened;
+    std::vector<double> second_flattened;
+    std::vector<double> temp_flattened(n * other.m, 0.0);
+    first_flattened.resize(n * m);
+    second_flattened.resize(other.n * other.m);
+    for (size_t i = 0; i < m; ++i) {
+      for (size_t j = 0; j < n; ++j) {
+        first_flattened[m * j + i] = matrix_values[j][i];
+      }
+      for (size_t j = 0; j < other.m; ++j) {
+        second_flattened[i * other.m + j] = other.matrix_values[i][j];
+      }
+    }
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t k = 0; k < m; ++k) {
+        for (size_t j = 0; j < other.m; ++j) {
+          temp_flattened[i * other.m + j] += first_flattened[i * m + k] * second_flattened[k * other.m + j];
+        }
+      }
+    }
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t j = 0; j < other.m; ++j) {
+        temp[i][j] = temp_flattened[i * other.m + j];
+      }
+    }
   }
   return Matrix(temp);
 }
@@ -138,9 +165,7 @@ Matrix& Matrix::operator*=(double other) {
   return *this;
 }
 
-Matrix operator*(double first, const Matrix& other) {
-  return other * first;
-}
+Matrix operator*(double first, const Matrix& other) { return other * first; }
 
 bool Matrix::operator==(const Matrix& other) const {
   if (n != other.n || m != other.m) {
@@ -156,9 +181,7 @@ bool Matrix::operator==(const Matrix& other) const {
   return true;
 }
 
-Matrix Matrix::operator-() const {
-  return (*this) * -1;
-}
+Matrix Matrix::operator-() const { return (*this) * -1; }
 
 Matrix Matrix::operator-(const Matrix& other) const {
   return (*this) + (other * -1);
