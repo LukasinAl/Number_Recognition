@@ -9,7 +9,7 @@ import pathlib
 from collections import deque
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-weights_path = os.path.join(script_dir, "../weights", "weights_99.125%.bin")
+weights_path = os.path.join(script_dir, "../weights", "FinalWeighs.bin")
 save_path = os.path.join(script_dir, "handwritten_data.csv")
 
 class Drawer(QWidget):

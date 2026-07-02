@@ -6,6 +6,6 @@ read.cpp
 test.cpp
 *.csv
 .vscode
-weights/
 include/network_core.so
 app/venv
+training/

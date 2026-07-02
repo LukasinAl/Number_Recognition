@@ -31,7 +31,7 @@ std::pair<int, std::vector<double>> ParceCsvLine(const std::string& line) {
 int main() {
   Net net(5, {784, 500, 300, 128, 10});
   net.FillBySmallRandomValues();
-  net.ReadFromBinary("weights/weights2softmaxBIG.bin");
+  net.ReadFromBinary("weights/FinalWeights.bin");
   net.learning_step = 0.001;
   net.SetLoss(LossFunctions::CROSSENTROPY);
   net.SetLayersActivations({ActivationFunctions::RELU,
@@ -91,7 +91,7 @@ int main() {
         total_samples_processed += batch_size;
 
         if (total_samples_processed % 1000 == 0) {
-          net.DumpToBinary("weights/weights2softmaxBIG.bin");
+          net.DumpToBinary("weights/FinalWeights.bin");
           std::cout << "Saved weights after " << total_samples_processed
                     << " samples\n";
         }
@@ -105,7 +105,7 @@ int main() {
       total_samples_processed += actual_batch_size;
       if (total_samples_processed % 10000 == 0 ||
           total_samples_processed % 10000 < actual_batch_size) {
-        net.DumpToBinary("weights/weights2softmaxBIG.bin");
+        net.DumpToBinary("weights/FinalWeights.bin");
         std::cout << "Saved weights after " << total_samples_processed
                   << " samples (final batch)\n";
       }
@@ -114,7 +114,7 @@ int main() {
     std::cout << "Epoch " << ep + 1 << " finished. Total samples processed: "
               << total_samples_processed << "\n";
   }
-  net.DumpToBinary("weights/weights2softmaxBIG.bin");
+  net.DumpToBinary("weights/FinalWeights.bin");
   std::cout << "Training complete. Final weights saved.\n";
 
   return 0;
