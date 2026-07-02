@@ -16,7 +16,3 @@ pybind11_add_module(network_core
     ${BIND_SRC}
 )
 target_link_libraries(network_core PRIVATE ${Python3_LIBRARIES})
-
-add_executable(test_net training/test.cpp ${NET_SRC} ${MATRIX_SRC})
-add_executable(train_net training/train.cpp ${NET_SRC} ${MATRIX_SRC})
-target_include_directories(test_net PRIVATE src/Net src/Matrix)
