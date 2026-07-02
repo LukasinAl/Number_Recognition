@@ -8,4 +8,4 @@ test.cpp
 .vscode
 include/network_core.so
 app/venv
-training/
+training
