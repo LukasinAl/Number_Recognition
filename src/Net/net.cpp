@@ -1,4 +1,5 @@
 #include "net.h"
+
 #include <cmath>
 #include <fstream>
 #include <functional>
@@ -7,20 +8,22 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 #include "../Matrix/Matrix.h"
 
 Net::Net(size_t lay, const std::vector<int>& sizes)
     : layers_(lay), layer_sizes_(sizes) {
   if (layers_ < 2) {
-    throw std::runtime_error("Too litte layers");
+    throw std::invalid_argument("Too litte layers");
   }
   if (layers_ != layer_sizes_.size()) {
-    throw std::runtime_error("Too little layer sizes");
+    throw std::length_error("Too little layer sizes");
   }
   learning_step = 0.01;
   fill_by_zeros();
-  activation_functions_.resize(layers_ - 1, ActivationFunnctions::RELU);
-  activation_functions_.back() = ActivationFunnctions::NO;
+  activation_functions_.resize(layers_ - 1, ActivationFunctions::NO);
+  activation_functions_.back() = ActivationFunctions::NO;
+  lossfunc = LossFunctions::MSE;
 }
 
 Net::Net(size_t lay, std::initializer_list<int> sizes)
@@ -29,7 +32,7 @@ Net::Net(size_t lay, std::initializer_list<int> sizes)
 std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
   Matrix temp(input);
   if (input.size() != layer_sizes_[0]) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::length_error("Wrong dimentions");
   }
   for (size_t i = 0; i < layers_ - 1; ++i) {
     temp = weights_[i] * temp + biases_[i];
@@ -41,10 +44,10 @@ std::vector<double> Net::ForwardPass(const std::vector<double>& input) const {
 Matrix Net::BatchForwardPass(const Matrix& input) const {
   Matrix temp = input.Transpose();
   if (input.matrix_values.size() < 1) {
-    throw std::runtime_error("No data given");
+    throw std::invalid_argument("No data given");
   }
   if (input.matrix_values[0].size() != layer_sizes_[0]) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::length_error("Wrong dimentions");
   }
   for (size_t i = 0; i < layers_ - 1; ++i) {
     std::vector<std::vector<double>> mult(
@@ -65,7 +68,7 @@ std::vector<double> Net::TrainingForwardPass(
     std::vector<Matrix>& last_pass_pre_acctivation) {
   Matrix temp(input);
   if (input.size() != layer_sizes_[0]) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::length_error("Wrong dimentions");
   }
   last_pass_activation.clear();
   last_pass_pre_acctivation.clear();
@@ -84,10 +87,10 @@ Matrix Net::BatchTrainingForwardPass(
     std::vector<Matrix>& last_pass_pre_acctivation) {
   Matrix temp = input.Transpose();
   if (input.matrix_values.size() < 1) {
-    throw std::runtime_error("No data given");
+    throw std::invalid_argument("No data given");
   }
   if (input.matrix_values[0].size() != layer_sizes_[0]) {
-    throw std::runtime_error("Wrong dimentions");
+    throw std::length_error("Wrong dimentions");
   }
   last_pass_activation.clear();
   last_pass_pre_acctivation.clear();
@@ -104,7 +107,7 @@ Matrix Net::BatchTrainingForwardPass(
 }
 
 void Net::ApplyActivation(Matrix& vector, int layer) const {
-  if (activation_functions_[layer] == ActivationFunnctions::SOFTMAX) {
+  if (activation_functions_[layer] == ActivationFunctions::SOFTMAX) {
     for (size_t vec = 0; vec < vector.matrix_values[0].size(); ++vec) {
       double statsum = 0;
       double min = vector.matrix_values[0][vec];
@@ -185,22 +188,21 @@ double Net::CalculateLoss(std::vector<double>& result,
   return -1;
 }
 
-void Net::SetLoss(const LossFunctions func) {
-  lossfunc = func;
-}
+void Net::SetLoss(const LossFunctions func) { lossfunc = func; }
 
-std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
+Gradients Net::CalculateGradients(
     const std::vector<double>& result, const std::vector<double>& expected,
     std::vector<Matrix>& last_pass_activation,
     std::vector<Matrix>& last_pass_pre_acctivation) const {
   std::vector<Matrix> weights_gradients(layers_ - 1);
   std::vector<Matrix> biases_gradients(layers_ - 1);
+  Matrix input_grad;
 
   if (lossfunc == LossFunctions::MSE &&
-      activation_functions_.back() == ActivationFunnctions::NO) {
+      activation_functions_.back() == ActivationFunctions::NO) {
     biases_gradients[layers_ - 2] = 2 * (Matrix(result) - Matrix(expected));
   } else if (lossfunc == LossFunctions::CROSSENTROPY &&
-             activation_functions_.back() == ActivationFunnctions::SOFTMAX) {
+             activation_functions_.back() == ActivationFunctions::SOFTMAX) {
     biases_gradients[layers_ - 2] = Matrix(result) - Matrix(expected);
   } else {
     throw std::runtime_error("This combination is not supported yet");
@@ -213,27 +215,29 @@ std::pair<std::vector<Matrix>, std::vector<Matrix>> Net::CalculateGradients(
       biases_gradients[i - 1] =
           (weights_[i].Transpose() * biases_gradients[i])
               .ElementWiseMultiplication(derivative_pre_activation);
+    } else {
+      input_grad = weights_[0].Transpose() * biases_gradients[0];
     }
     weights_gradients[i] =
         biases_gradients[i] * last_pass_activation[i].Transpose();
   }
-  return {weights_gradients, biases_gradients};
+  return Gradients({weights_gradients, biases_gradients, input_grad});
 }
 
-std::pair<std::vector<Matrix>, std::vector<Matrix>>
-Net::BatchCalculateGradients(
+Gradients Net::BatchCalculateGradients(
     const Matrix& result, const Matrix& expected,
     std::vector<Matrix>& last_pass_activation,
     std::vector<Matrix>& last_pass_pre_acctivation) const {
   std::vector<Matrix> weights_gradients(layers_ - 1);
   std::vector<Matrix> biases_gradients(layers_ - 1);
+  Matrix input_grad;
 
   if (lossfunc == LossFunctions::MSE &&
-      activation_functions_.back() == ActivationFunnctions::NO) {
+      activation_functions_.back() == ActivationFunctions::NO) {
     biases_gradients[layers_ - 2] =
         2 * (result.Transpose() - expected.Transpose());
   } else if (lossfunc == LossFunctions::CROSSENTROPY &&
-             activation_functions_.back() == ActivationFunnctions::SOFTMAX) {
+             activation_functions_.back() == ActivationFunctions::SOFTMAX) {
     biases_gradients[layers_ - 2] = result.Transpose() - expected.Transpose();
   } else {
     throw std::runtime_error("This combination is not supported yet");
@@ -246,6 +250,9 @@ Net::BatchCalculateGradients(
       biases_gradients[i - 1] =
           (weights_[i].Transpose() * biases_gradients[i])
               .ElementWiseMultiplication(derivative_pre_activation);
+    } else {
+      input_grad = weights_[0].Transpose() * biases_gradients[0] *
+                   (1.0 / result.matrix_values.size());
     }
     weights_gradients[i] = biases_gradients[i] *
                            last_pass_activation[i].Transpose() *
@@ -256,7 +263,7 @@ Net::BatchCalculateGradients(
                                                 std::vector<double>(1, 1))) *
         (1.0 / result.matrix_values.size());
   }
-  return {weights_gradients, biases_gradients};
+  return Gradients({weights_gradients, biases_gradients, input_grad});
 }
 
 void Net::ApplyDerivative(Matrix& vector, int layer) const {
@@ -267,17 +274,18 @@ void Net::ApplyDerivative(Matrix& vector, int layer) const {
   }
 }
 
-void Net::Step(std::pair<std::vector<Matrix>, std::vector<Matrix>> gradients) {
+void Net::Step(Gradients gradients) {
   for (size_t layer = 0; layer < layers_ - 1; ++layer) {
     size_t input = layer_sizes_[layer];
     size_t output = layer_sizes_[layer + 1];
     for (size_t row = 0; row < output; ++row) {
       for (size_t column = 0; column < input; ++column) {
         weights_[layer].matrix_values[row][column] -=
-            gradients.first[layer].matrix_values[row][column] * learning_step;
+            gradients.weight_grads[layer].matrix_values[row][column] *
+            learning_step;
       }
       biases_[layer].matrix_values[row][0] -=
-          gradients.second[layer].matrix_values[row][0] * learning_step;
+          gradients.bias_grads[layer].matrix_values[row][0] * learning_step;
     }
   }
 }
@@ -316,13 +324,13 @@ void Net::DumpToBinary(const std::string& file_name) const {
   out.write(reinterpret_cast<const char*>(&val), sizeof(val));
   for (size_t i = 0; i < activation_functions_.size(); ++i) {
     int v = 0;
-    if (activation_functions_[i] == ActivationFunnctions::NO) {
+    if (activation_functions_[i] == ActivationFunctions::NO) {
       v = 1;
-    } else if (activation_functions_[i] == ActivationFunnctions::RELU) {
+    } else if (activation_functions_[i] == ActivationFunctions::RELU) {
       v = 2;
-    } else if (activation_functions_[i] == ActivationFunnctions::SIGMOID) {
+    } else if (activation_functions_[i] == ActivationFunctions::SIGMOID) {
       v = 3;
-    } else if (activation_functions_[i] == ActivationFunnctions::SOFTMAX) {
+    } else if (activation_functions_[i] == ActivationFunctions::SOFTMAX) {
       v = 4;
     }
     if (v == 0) {
@@ -370,13 +378,15 @@ void Net::ReadFromBinary(const std::string& file_name) {
     int v = 0;
     in.read(reinterpret_cast<char*>(&v), sizeof(v));
     if (v == 1) {
-      activation_functions_[i] = ActivationFunnctions::NO;
+      activation_functions_[i] = ActivationFunctions::NO;
     } else if (v == 2) {
-      activation_functions_[i] = ActivationFunnctions::RELU;
+      activation_functions_[i] = ActivationFunctions::RELU;
     } else if (v == 3) {
-      activation_functions_[i] = ActivationFunnctions::SIGMOID;
+      activation_functions_[i] = ActivationFunctions::SIGMOID;
     } else if (v == 4) {
-      activation_functions_[i] = ActivationFunnctions::SOFTMAX;
+      activation_functions_[i] = ActivationFunctions::SOFTMAX;
+    } else {
+      throw std::runtime_error("Unexpected activation functio");
     }
   }
 }
@@ -385,7 +395,7 @@ void Net::Train(const std::vector<std::vector<double>>& inputs,
                 const std::vector<std::vector<double>>& targets, int epochs,
                 int batch_size) {
   if (inputs.size() != targets.size()) {
-    throw std::runtime_error("Number of inputs and targets is different");
+    throw std::length_error("Number of inputs and targets is different");
   }
   for (int i = 0; i < epochs; ++i) {
     int total_count = 0;
@@ -407,11 +417,11 @@ void Net::Train(const std::vector<std::vector<double>>& inputs,
                                         post_active, pre_active);
         for (size_t lay = 0; lay < layers_ - 1; ++lay) {
           if (weight_grad[lay].m == 0) {
-            weight_grad[lay] = grads.first[lay];
-            biases_grad[lay] = grads.second[lay];
+            weight_grad[lay] = grads.weight_grads[lay];
+            biases_grad[lay] = grads.bias_grads[lay];
           } else {
-            weight_grad[lay] += grads.first[lay];
-            biases_grad[lay] += grads.second[lay];
+            weight_grad[lay] += grads.weight_grads[lay];
+            biases_grad[lay] += grads.bias_grads[lay];
           }
         }
         total_count++;
@@ -426,16 +436,15 @@ void Net::Train(const std::vector<std::vector<double>>& inputs,
         weight_grad[lay] *= (1.0 / size);
         biases_grad[lay] *= (1.0 / size);
       }
-      Step({weight_grad, biases_grad});
+      Step({weight_grad, biases_grad, Matrix(1, 1, 0)}); //input grads is dummy matrix which is not used in Step prosess
     }
   }
 }
 
 void Net::BatchTrain(const std::vector<std::vector<double>>& inputs,
-                     const std::vector<std::vector<double>>& targets,
-                     int epochs, int batch_size) {
-  if (inputs.size() != targets.size()) {
-    throw std::runtime_error("Number of inputs and targets is different");
+                     const std::vector<std::vector<double>>& targets) {
+  if (inputs.size() != targets.size() || inputs.size() == 0) {
+    throw std::length_error("Number of inputs and targets is different");
   }
   Matrix result;
   std::vector<Matrix> weight_grad;
@@ -447,47 +456,47 @@ void Net::BatchTrain(const std::vector<std::vector<double>>& inputs,
   result = BatchTrainingForwardPass(Matrix(inputs), post_active, pre_active);
   auto grads =
       BatchCalculateGradients(result, Matrix(targets), post_active, pre_active);
-  Step({grads.first, grads.second});
+  Step({grads.weight_grads, grads.bias_grads, grads.input_grad});
 }
 
 void Net::SetLayersActivations(
-    const std::vector<ActivationFunnctions>& functions) {
+    const std::vector<ActivationFunctions>& functions) {
   if (functions.size() != layers_ - 1) {
     throw std::length_error(
-        "Nmber of functions does not match number of layers with activation");
+        "Number of functions does not match number of layers with activation");
   }
   for (size_t i = 0; i < functions.size() - 1; ++i) {
-    if (functions[i] == ActivationFunnctions::SOFTMAX) {
+    if (functions[i] == ActivationFunctions::SOFTMAX) {
       throw std::logic_error("Cannot apply softmax to hidden layers");
     }
   }
   activation_functions_ = functions;
 }
 
-double Net::ResolveActivation(ActivationFunnctions func, double x) const {
-  if (func == ActivationFunnctions::RELU) {
+double Net::ResolveActivation(ActivationFunctions func, double x) const {
+  if (func == ActivationFunctions::RELU) {
     return ReLu(x);
   }
-  if (func == ActivationFunnctions::SIGMOID) {
+  if (func == ActivationFunctions::SIGMOID) {
     return Sigmoid(x);
   }
-  if (func == ActivationFunnctions::NO) {
+  if (func == ActivationFunctions::NO) {
     return x;
   }
   return x;
 }
 
-double Net::ResolveDerivative(ActivationFunnctions func, double x) const {
-  if (func == ActivationFunnctions::NO) {
+double Net::ResolveDerivative(ActivationFunctions func, double x) const {
+  if (func == ActivationFunctions::NO) {
     return 1;
   }
-  if (func == ActivationFunnctions::RELU) {
+  if (func == ActivationFunctions::RELU) {
     if (x > 0) {
       return 1;
     }
     return 0;
   }
-  if (func == ActivationFunnctions::SIGMOID) {
+  if (func == ActivationFunctions::SIGMOID) {
     return Sigmoid(x) * (1 - Sigmoid(x));
   }
   return 1;
@@ -501,6 +510,4 @@ double Net::ReLu(double x) {
   }
 }
 
-double Net::Sigmoid(double x) {
-  return 1.0 / (1 + std::exp(-x));
-}
+double Net::Sigmoid(double x) { return 1.0 / (1 + std::exp(-x)); }

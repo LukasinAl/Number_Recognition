@@ -9,11 +9,11 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(network_core, core) {
   core.doc() = "Neural network core";
-  py::enum_<ActivationFunnctions>(core, "ActivationFunction")
-      .value("NO", ActivationFunnctions::NO)
-      .value("RELU", ActivationFunnctions::RELU)
-      .value("SOFTMAX", ActivationFunnctions::SOFTMAX)
-      .value("SIGMOID", ActivationFunnctions::SIGMOID);
+  py::enum_<ActivationFunctions>(core, "ActivationFunction")
+      .value("NO", ActivationFunctions::NO)
+      .value("RELU", ActivationFunctions::RELU)
+      .value("SOFTMAX", ActivationFunctions::SOFTMAX)
+      .value("SIGMOID", ActivationFunctions::SIGMOID);
 
   py::enum_<LossFunctions>(core, "LossFunction")
       .value("MSE", LossFunctions::MSE)

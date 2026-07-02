@@ -34,10 +34,10 @@ int main() {
   net.ReadFromBinary("weights/weights2softmaxBIG.bin");
   net.learning_step = 0.001;
   net.SetLoss(LossFunctions::CROSSENTROPY);
-  net.SetLayersActivations({ActivationFunnctions::RELU,
-                            ActivationFunnctions::RELU,
-                            ActivationFunnctions::RELU,
-                            ActivationFunnctions::SOFTMAX});
+  net.SetLayersActivations({ActivationFunctions::RELU,
+                            ActivationFunctions::RELU,
+                            ActivationFunctions::RELU,
+                            ActivationFunctions::SOFTMAX});
 
   const int epochs = 1;
   const int batch_size = 256;
@@ -87,7 +87,7 @@ int main() {
       samples_in_epoch++;
 
       if (batch_inputs.size() == batch_size) {
-        net.BatchTrain(batch_inputs, batch_targets, 1, batch_size);
+        net.BatchTrain(batch_inputs, batch_targets);
         total_samples_processed += batch_size;
 
         if (total_samples_processed % 1000 == 0) {
@@ -101,7 +101,7 @@ int main() {
     }
     if (!batch_inputs.empty()) {
       int actual_batch_size = batch_inputs.size();
-      net.BatchTrain(batch_inputs, batch_targets, 1, actual_batch_size);
+      net.BatchTrain(batch_inputs, batch_targets);
       total_samples_processed += actual_batch_size;
       if (total_samples_processed % 10000 == 0 ||
           total_samples_processed % 10000 < actual_batch_size) {
