@@ -25,6 +25,12 @@ PYBIND11_MODULE(network_core, core) {
       .def("FillByRandomValues", &Net::FillBySmallRandomValues)
       .def("ForwardPass", py::overload_cast<const std::vector<double>&>(
                               &Net::ForwardPass, py::const_))
+      .def("BatchForwardPass", &Net::BatchForwardPass)
+      .def("TrainingForwardPass", &Net::TrainingForwardPass)
+      .def("BatchTrainingForwardPass", &Net::BatchTrainingForwardPass)
+      .def("CalculateGradients", &Net::CalculateGradients)
+      .def("BatchCalculateGradients", &Net::BatchCalculateGradients)
+      .def("Step", &Net::Step)
       .def("SetLayersAcivation", &Net::SetLayersActivations)
       .def("CalculateLoss", &Net::CalculateLoss)
       .def("SetLoss", &Net::SetLoss)
